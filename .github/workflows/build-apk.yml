@@ -1,0 +1,54 @@
+name: Build Android APK
+
+# Builds an installable arm64 APK of the app. Run it by hand from the Actions
+# tab ("Run workflow"), or it runs automatically on every push to main.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Type-check the TypeScript
+        run: npx tsc --noEmit
+
+      # android/ is generated, not committed. This also applies the project's
+      # config plugins (core-library desugaring, ABI list, signing).
+      - name: Generate the native Android project
+        run: npx expo prebuild --platform android --no-install
+
+      # arm64-v8a covers every modern phone and keeps the build fast and small.
+      # Without a keystore the release build is signed with the debug key,
+      # which installs fine for personal testing.
+      - name: Build the release APK
+        working-directory: android
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" --no-daemon --stacktrace
+
+      - name: Upload the APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NOTE-apk
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
