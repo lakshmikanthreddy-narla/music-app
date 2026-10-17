@@ -1,11 +1,6 @@
 package expo.modules.notenative
 
-import android.app.Activity
-import android.content.Intent
 import android.os.Build
-import android.speech.RecognizerIntent
-import androidx.activity.result.contract.ActivityResultContracts
-import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import org.schabi.newpipe.extractor.NewPipe
@@ -72,43 +67,6 @@ class NoteNativeModule : Module() {
     // performs several blocking network round-trips.
     AsyncFunction("resolveYouTubeStream") { videoId: String ->
       resolveYouTubeStream(videoId)
-    }
-
-    var pendingVoicePromise: Promise? = null
-
-    RegisterActivityContracts {
-      val voiceLauncher = registerForActivityResult(
-        "voiceSearch",
-        ActivityResultContracts.StartActivityForResult()
-      ) { result ->
-        val promise = pendingVoicePromise
-        pendingVoicePromise = null
-
-        if (result.resultCode == Activity.RESULT_OK) {
-          val matches = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-          val spoken = matches?.firstOrNull() ?: ""
-          promise?.resolve(spoken)
-        } else {
-          promise?.resolve("")
-        }
-      }
-
-      AsyncFunction("startVoiceSearch") { promise: Promise ->
-        try {
-          pendingVoicePromise = promise
-          val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(
-              RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-              RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-            )
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Say a song or artist name...")
-          }
-          voiceLauncher.launch(intent)
-        } catch (e: Throwable) {
-          pendingVoicePromise = null
-          promise.resolve("")
-        }
-      }
     }
   }
 
