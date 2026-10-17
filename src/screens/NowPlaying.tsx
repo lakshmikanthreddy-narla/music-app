@@ -17,6 +17,7 @@ import { COLORS, SIZES, FONTS } from '../constants/theme';
 import { PlaybackSourceSheet } from '../components/player/PlaybackSourceSheet';
 import { SeekBar } from '../components/player/SeekBar';
 import { AddToPlaylistSheet } from '../components/lists/AddToPlaylistSheet';
+import { LyricsCard } from '../components/player/LyricsCard';
 import { Track } from '../core/types';
 import { usePlayer } from '../hooks/usePlayer';
 import { useLibrary } from '../hooks/useLibrary';
@@ -249,6 +250,9 @@ export default function NowPlayingScreen() {
             />
           </TouchableOpacity>
         </View>
+
+        {/* Live Synchronized Lyrics */}
+        <LyricsCard track={currentTrack} onSeek={seekTo} />
 
         {/* Up Next */}
         {showQueue && (

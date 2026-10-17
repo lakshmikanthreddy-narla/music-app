@@ -24,6 +24,7 @@ import { useSearch } from '../hooks/useSearch';
 import { usePlayer } from '../hooks/usePlayer';
 import { MusicService } from '../services/MusicService';
 import { useNavigation } from '@react-navigation/native';
+import { startVoiceSearch } from '../../modules/note-native';
 
 const FILTERS: SearchFilter[] = ['All', 'Songs', 'Artists', 'Albums', 'Playlists'];
 
@@ -46,6 +47,23 @@ export default function SearchScreen() {
 
   const { playTrack, currentTrack, isPlaying, togglePlayPause } = usePlayer();
   const [expandingId, setExpandingId] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+
+  const handleVoiceSearch = useCallback(async () => {
+    Keyboard.dismiss();
+    setIsListening(true);
+    try {
+      const text = await startVoiceSearch();
+      if (text && text.trim().length > 0) {
+        setQuery(text.trim());
+        searchNow(text.trim());
+      }
+    } catch {
+      // Ignore
+    } finally {
+      setIsListening(false);
+    }
+  }, [setQuery, searchNow]);
 
   const isBrowsing = query.trim().length === 0;
 
@@ -192,11 +210,17 @@ export default function SearchScreen() {
             returnKeyType="search"
             autoCorrect={false}
           />
-          <TouchableOpacity onPress={() => (query ? clear() : undefined)}>
+          <TouchableOpacity
+            onPress={() => (query ? clear() : handleVoiceSearch())}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            disabled={isListening}
+          >
             {query ? (
               <X color={COLORS.text.secondary} size={20} />
+            ) : isListening ? (
+              <ActivityIndicator size="small" color={COLORS.accent.green} />
             ) : (
-              <Mic color={COLORS.text.secondary} size={20} />
+              <Mic color={COLORS.accent.green} size={20} />
             )}
           </TouchableOpacity>
         </View>

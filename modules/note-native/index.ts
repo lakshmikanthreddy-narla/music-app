@@ -48,3 +48,19 @@ export async function resolveYouTubeStream(
     };
   }
 }
+
+/**
+ * Triggers the native platform's voice speech-to-text recognition dialog.
+ * Returns the spoken query string, or empty string on cancel / failure.
+ */
+export async function startVoiceSearch(): Promise<string> {
+  const module = NoteNativeModule;
+  if (!module || typeof module.startVoiceSearch !== 'function') {
+    return '';
+  }
+  try {
+    return await module.startVoiceSearch();
+  } catch {
+    return '';
+  }
+}
