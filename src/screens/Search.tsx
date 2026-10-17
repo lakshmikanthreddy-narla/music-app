@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Keyboard,
   Dimensions,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search as SearchIcon, Mic, X } from 'lucide-react-native';
@@ -32,21 +33,21 @@ const { width } = Dimensions.get('window');
 
 const FILTERS: SearchFilter[] = ['All', 'Songs', 'Artists', 'Albums', 'Playlists'];
 
-// Genre cards gradient definitions matching PDF Page 4
-const CATEGORY_GRADIENTS: Record<string, readonly [string, string]> = {
-  c1: ['#0A4D68', '#051923'], // Top Charts
-  c2: ['#7928CA', '#2B0938'], // New Releases
-  c3: ['#1A365D', '#0B192C'], // Mood
-  c4: ['#00796B', '#004D40'], // Party
-  c5: ['#4A148C', '#1A0033'], // Chill
-  c6: ['#1B5E20', '#0A290E'], // Workout
-  c7: ['#C2185B', '#4A0E2E'], // Pop
-  c8: ['#B45309', '#3D1C02'], // Hip Hop
-  c9: ['#880E4F', '#2E0318'], // Rock
-  c10: ['#C2410C', '#431407'], // Indie
-  c11: ['#00B4D8', '#003554'], // EDM
-  c12: ['#4A0E4E', '#190019'], // Classical
-};
+// 12 Browse genre tiles matching reference screen 3
+const GENRE_TILES = [
+  { id: 'g_pop', name: 'Pop', query: 'pop hits', image: require('../../assets/ui/genre_pop.jpg') },
+  { id: 'g_rock', name: 'Rock', query: 'rock classics', image: require('../../assets/ui/genre_rock.jpg') },
+  { id: 'g_happy', name: 'Happy', query: 'happy feel good songs', image: require('../../assets/ui/genre_happy.jpg') },
+  { id: 'g_sad', name: 'Sad', query: 'sad acoustic songs', image: require('../../assets/ui/genre_sad.jpg') },
+  { id: 'g_chill', name: 'Chill', query: 'chill vibes lofi', image: require('../../assets/ui/genre_chill.jpg') },
+  { id: 'g_party', name: 'Party', query: 'party dance club', image: require('../../assets/ui/genre_party.jpg') },
+  { id: 'g_workout', name: 'Workout', query: 'workout gym cardio', image: require('../../assets/ui/genre_workout.jpg') },
+  { id: 'g_jazz', name: 'Jazz', query: 'smooth jazz cafe', image: require('../../assets/ui/genre_jazz.jpg') },
+  { id: 'g_hiphop', name: 'Hip Hop', query: 'hip hop rap hits', image: require('../../assets/ui/genre_hiphop.jpg') },
+  { id: 'g_indie', name: 'Indie', query: 'indie alternative', image: require('../../assets/ui/genre_indie.jpg') },
+  { id: 'g_classical', name: 'Classical', query: 'classical piano masterpiece', image: require('../../assets/ui/genre_classical.jpg') },
+  { id: 'g_trending', name: 'Trending', query: 'top trending hits', image: require('../../assets/ui/genre_trending.jpg') },
+];
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
@@ -205,12 +206,6 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#0A1326', '#060B18', '#040710']}
-        locations={[0, 0.4, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
@@ -221,13 +216,13 @@ export default function SearchScreen() {
       >
         <Text style={styles.headerTitle}>Search</Text>
 
-        {/* Search Input Bar with Voice Mic */}
+        {/* Search Input Bar with Voice Mic: height 50, radius 16, #1B1B1B */}
         <View style={styles.searchContainer}>
-          <SearchIcon color={COLORS.text.secondary} size={20} />
+          <SearchIcon color="#B4B6B5" size={20} />
           <TextInput
             style={styles.searchInput}
             placeholder="Artists, songs, albums, playlists..."
-            placeholderTextColor="#8A99AD"
+            placeholderTextColor="#B2B2B2"
             value={query}
             onChangeText={setQuery}
             onSubmitEditing={() => searchNow(query)}
@@ -243,9 +238,9 @@ export default function SearchScreen() {
             {query ? (
               <X color={COLORS.text.secondary} size={20} />
             ) : isListening ? (
-              <ActivityIndicator size="small" color={COLORS.accent.cyan} />
+              <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Mic color={COLORS.accent.cyan} size={20} />
+              <Mic color="#FFFFFF" size={20} />
             )}
           </TouchableOpacity>
         </View>
@@ -270,31 +265,26 @@ export default function SearchScreen() {
             <Text style={styles.sectionTitle}>Browse All</Text>
 
             <View style={styles.categoriesGrid}>
-              {BROWSE_CATEGORIES.map((category) => {
-                const gradient = CATEGORY_GRADIENTS[category.id] || ['#0D1B36', '#060B18'];
-                return (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={styles.categoryCardWrapper}
-                    activeOpacity={0.82}
-                    onPress={() => {
-                      setQuery(category.name);
-                      searchNow(category.query);
-                    }}
-                  >
-                    <View style={styles.categoryCard}>
-                      <LinearGradient
-                        colors={gradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={StyleSheet.absoluteFill}
-                      />
-                      <View style={styles.categoryGlowCircle} />
-                      <Text style={styles.categoryName}>{category.name}</Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+              {GENRE_TILES.map((category) => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={styles.categoryCardWrapper}
+                  activeOpacity={0.82}
+                  onPress={() => {
+                    setQuery(category.name);
+                    searchNow(category.query);
+                  }}
+                >
+                  <View style={styles.categoryCard}>
+                    <Image source={category.image} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                    <LinearGradient
+                      colors={['rgba(0, 0, 0, 0.2)', 'rgba(0, 0, 0, 0.55)']}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <Text style={styles.categoryName}>{category.name}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
             </View>
           </>
         ) : (
@@ -310,7 +300,7 @@ export default function SearchScreen() {
 
             {isSearching && !hasResults && (
               <View style={styles.stateCenter}>
-                <ActivityIndicator color={COLORS.accent.cyan} size="large" />
+                <ActivityIndicator color="#FFFFFF" size="large" />
               </View>
             )}
 
@@ -423,17 +413,11 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(10, 20, 42, 0.85)',
-    borderWidth: 1.2,
-    borderColor: 'rgba(0, 212, 255, 0.28)',
-    borderRadius: 28,
-    paddingHorizontal: SIZES.md,
-    height: 52,
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    height: 50,
     marginBottom: SIZES.lg,
-    shadowColor: COLORS.accent.cyan,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
   },
   searchInput: {
     flex: 1,
@@ -441,7 +425,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     fontSize: 15,
     color: '#FFFFFF',
-    marginLeft: SIZES.sm,
+    marginLeft: 10,
   },
   micButton: {
     padding: 6,
@@ -466,28 +450,20 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   categoryCard: {
-    height: 92,
+    height: 70,
     borderRadius: 14,
-    padding: 14,
+    justifyContent: 'center',
+    paddingLeft: 18,
     overflow: 'hidden',
     position: 'relative',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  categoryGlowCircle: {
-    position: 'absolute',
-    right: -15,
-    bottom: -15,
-    width: 65,
-    height: 65,
-    borderRadius: 32.5,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: COLORS.surface,
   },
   categoryName: {
     fontFamily: FONTS.bold,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
+    zIndex: 2,
   },
   resultsList: {
     marginBottom: SIZES.lg,

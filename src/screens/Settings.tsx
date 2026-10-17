@@ -72,12 +72,6 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#0B152B', '#060B18', '#03060C']}
-        locations={[0, 0.45, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -86,23 +80,25 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Centered Top Header matching PDF Page 9 */}
+        {/* Centered Top Header matching Reference Screen 10 */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Edit Profile</Text>
         </View>
 
-        {/* Profile Avatar with Glowing Electric Cyan Halo Ring */}
+        {/* Profile Avatar with 2pt white ring and 30pt camera badge */}
         <View style={styles.avatarSection}>
           <View style={styles.avatarHalo}>
-            <View style={styles.avatarInner}>
-              <User color={COLORS.accent.cyan} size={54} />
-            </View>
+            <Image
+              source={require('../../assets/ui/avatar_profile.jpg')}
+              style={styles.avatarInner}
+              resizeMode="cover"
+            />
             <TouchableOpacity
               style={styles.cameraBadge}
               activeOpacity={0.8}
               onPress={() => setIsEditingName(true)}
             >
-              <Camera color="#FFFFFF" size={16} />
+              <Camera color="#FFFFFF" size={15} />
             </TouchableOpacity>
           </View>
 
@@ -129,101 +125,93 @@ export default function SettingsScreen() {
               activeOpacity={0.7}
             >
               <Text style={styles.displayName}>{profile.name || 'Antony Das'}</Text>
-              <Edit3 color="#8A99AD" size={16} style={{ marginLeft: 6 }} />
             </TouchableOpacity>
           )}
 
-          {/* Gender Badge with Cyan Symbol */}
-          <View style={styles.genderBadge}>
-            <Text style={styles.genderSymbol}>{currentGenderObj.symbol}</Text>
-            <Text style={styles.genderLabel}>{currentGenderObj.label}</Text>
+          {/* Gender line on Edit Profile: #D9DAD9 15 */}
+          <Text style={styles.genderLine}>
+            {currentGenderObj.symbol} {currentGenderObj.label}
+          </Text>
+        </View>
+
+        {/* "My Library" Card matching Reference Screen 10 */}
+        <View style={styles.profileCard}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardSectionTitle}>My Library</Text>
+            <TouchableOpacity
+              style={styles.seeAllRow}
+              onPress={() => navigation.navigate('LibraryTab' as never)}
+            >
+              <Text style={styles.seeAllText}>See all</Text>
+              <ChevronRight color={COLORS.text.meta} size={14} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.innerTilesRow}>
+            {/* Tile 1: Liked Songs */}
+            <TouchableOpacity
+              style={styles.innerTile}
+              activeOpacity={0.82}
+              onPress={() => (navigation.navigate as any)('Playlist', { playlistId: 'liked' })}
+            >
+              <View style={styles.tileSquareIcon}>
+                <Heart color="#FFFFFF" fill="#FFFFFF" size={20} />
+              </View>
+              <Text style={styles.tileTitle}>Liked Songs</Text>
+              <Text style={styles.tileMeta}>
+                {liked.length > 0 ? `${liked.length} songs` : '543 songs'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Tile 2: My Playlists */}
+            <TouchableOpacity
+              style={styles.innerTile}
+              activeOpacity={0.82}
+              onPress={() => navigation.navigate('LibraryTab' as never)}
+            >
+              <View style={styles.tileSquareIcon}>
+                <Music color="#FFFFFF" size={20} />
+              </View>
+              <Text style={styles.tileTitle}>My Playlists</Text>
+              <Text style={styles.tileMeta}>
+                {playlists.length > 0
+                  ? `${playlists.length} playlists • ${totalSongsInPlaylists} songs`
+                  : '12 playlists • 286 songs'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* "My Library" Section matching PDF Page 9 */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>My Library</Text>
-          <TouchableOpacity
-            style={styles.seeAllRow}
-            onPress={() => navigation.navigate('LibraryTab' as never)}
-          >
-            <Text style={styles.seeAllText}>See all</Text>
-            <ChevronRight color={COLORS.text.secondary} size={14} />
-          </TouchableOpacity>
-        </View>
+        {/* "Listening Stats" Card matching Reference Screen 10 */}
+        <View style={styles.profileCard}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardSectionTitle}>Listening Stats</Text>
+          </View>
 
-        <View style={styles.libraryCardsRow}>
-          {/* Card 1: Liked Songs */}
-          <TouchableOpacity
-            style={styles.libCard}
-            activeOpacity={0.82}
-            onPress={() => (navigation.navigate as any)('Playlist', { playlistId: 'liked' })}
-          >
-            <LinearGradient
-              colors={['#6B21A8', '#3B0764']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.cardIconCircle}>
-              <Heart color="#FFFFFF" fill="#FFFFFF" size={20} />
+          <View style={styles.statsRow}>
+            <View style={styles.statColumn}>
+              <Headphones color="#FFFFFF" size={26} strokeWidth={1.8} />
+              <Text style={styles.statNumber}>
+                {history.length > 0 ? (2300 + history.length).toLocaleString() : '2,348'}
+              </Text>
+              <Text style={styles.statLabel}>Songs Played</Text>
             </View>
-            <Text style={styles.cardTitle}>Liked Songs</Text>
-            <Text style={styles.cardMeta}>{liked.length > 0 ? `${liked.length} songs` : '543 songs'}</Text>
-          </TouchableOpacity>
 
-          {/* Card 2: My Playlists */}
-          <TouchableOpacity
-            style={styles.libCard}
-            activeOpacity={0.82}
-            onPress={() => navigation.navigate('LibraryTab' as never)}
-          >
-            <LinearGradient
-              colors={['#0077B6', '#023E8A']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.cardIconCircle}>
-              <Music color="#00D4FF" size={20} />
+            <View style={styles.statDivider} />
+
+            <View style={styles.statColumn}>
+              <Clock color="#FFFFFF" size={26} strokeWidth={1.8} />
+              <Text style={styles.statNumber}>156</Text>
+              <Text style={styles.statLabel}>Hours Listened</Text>
             </View>
-            <Text style={styles.cardTitle}>My Playlists</Text>
-            <Text style={styles.cardMeta}>
-              {playlists.length > 0
-                ? `${playlists.length} playlists • ${totalSongsInPlaylists} songs`
-                : '12 playlists • 286 songs'}
-            </Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* "Listening Stats" Section matching PDF Page 9 */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Listening Stats</Text>
-        </View>
+            <View style={styles.statDivider} />
 
-        <View style={styles.statsCard}>
-          <View style={styles.statColumn}>
-            <Headphones color={COLORS.accent.cyan} size={24} />
-            <Text style={styles.statNumber}>
-              {history.length > 0 ? (2300 + history.length).toLocaleString() : '2,348'}
-            </Text>
-            <Text style={styles.statLabel}>Songs Played</Text>
-          </View>
-
-          <View style={styles.statDivider} />
-
-          <View style={styles.statColumn}>
-            <Clock color={COLORS.accent.cyan} size={24} />
-            <Text style={styles.statNumber}>156</Text>
-            <Text style={styles.statLabel}>Hours Listened</Text>
-          </View>
-
-          <View style={styles.statDivider} />
-
-          <View style={styles.statColumn}>
-            <BarChart2 color={COLORS.accent.cyan} size={24} />
-            <Text style={styles.statNumber}>87</Text>
-            <Text style={styles.statLabel}>Artists Explored</Text>
+            <View style={styles.statColumn}>
+              <BarChart2 color="#FFFFFF" size={26} strokeWidth={1.8} />
+              <Text style={styles.statNumber}>87</Text>
+              <Text style={styles.statLabel}>Artists Explored</Text>
+            </View>
           </View>
         </View>
 
@@ -253,21 +241,21 @@ export default function SettingsScreen() {
         <View style={styles.aboutCard}>
           <View style={styles.aboutRow}>
             <Text style={styles.aboutLabel}>App Version</Text>
-            <Text style={styles.aboutValue}>SONIQ v{version}</Text>
+            <Text style={styles.aboutValue}>Sonic Cube v{version}</Text>
           </View>
           <View style={styles.divider} />
           <TouchableOpacity style={styles.aboutRow} onPress={() => open(REPO_URL)}>
             <Text style={styles.aboutLink}>Source code & updates</Text>
-            <ExternalLink color="#8A99AD" size={16} />
+            <ExternalLink color="#B4B6B5" size={16} />
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity style={styles.aboutRow} onPress={() => open(GPL_URL)}>
             <Text style={styles.aboutLink}>GNU GPL v3 License</Text>
-            <ExternalLink color="#8A99AD" size={16} />
+            <ExternalLink color="#B4B6B5" size={16} />
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.footerNote}>SONIQ • FEEL EVERY BEAT</Text>
+        <Text style={styles.footerNote}>SONIC CUBE • FEEL EVERY BEAT</Text>
       </ScrollView>
     </View>
   );
@@ -279,7 +267,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   scrollContent: {
-    paddingHorizontal: SIZES.md,
+    paddingHorizontal: 20,
   },
   header: {
     alignItems: 'center',
@@ -293,53 +281,46 @@ const styles = StyleSheet.create({
   },
   avatarSection: {
     alignItems: 'center',
-    marginBottom: SIZES.xl,
+    marginBottom: 24,
   },
   avatarHalo: {
     width: 110,
     height: 110,
     borderRadius: 55,
-    borderWidth: 2.5,
-    borderColor: COLORS.accent.cyan,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.accent.cyan,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.85,
-    shadowRadius: 18,
-    elevation: 10,
-    marginBottom: SIZES.md,
+    marginBottom: 16,
+    position: 'relative',
   },
   avatarInner: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#0F1E3D',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 104,
+    height: 104,
+    borderRadius: 52,
   },
   cameraBadge: {
     position: 'absolute',
-    right: 2,
+    right: 0,
     bottom: 2,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#0A1428',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#000000',
     borderWidth: 1.5,
-    borderColor: COLORS.accent.cyan,
+    borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   displayName: {
     fontFamily: FONTS.bold,
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 26,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   nameEditRow: {
@@ -352,9 +333,9 @@ const styles = StyleSheet.create({
     height: 40,
     paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: '#0A1428',
-    borderWidth: 1.5,
-    borderColor: COLORS.accent.cyan,
+    backgroundColor: '#1B1B1B',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
     color: '#FFFFFF',
     fontSize: 16,
     fontFamily: FONTS.medium,
@@ -364,7 +345,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.accent.cyan,
+    backgroundColor: '#FCFCFC',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -372,102 +353,79 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bold,
     fontSize: 14,
     fontWeight: '700',
-    color: '#060B18',
+    color: '#000000',
   },
-  genderBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 14,
-    backgroundColor: 'rgba(10, 20, 42, 0.7)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.25)',
-  },
-  genderSymbol: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.accent.cyan,
-  },
-  genderLabel: {
+  genderLine: {
     fontFamily: FONTS.medium,
-    fontSize: 13,
-    color: '#FFFFFF',
+    fontSize: 15,
+    color: '#D9DAD9',
+    marginTop: 2,
   },
-  sectionHeader: {
+  profileCard: {
+    backgroundColor: '#0E0E0E',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SIZES.md,
-    marginTop: SIZES.md,
+    marginBottom: 14,
   },
-  sectionTitle: {
+  cardSectionTitle: {
     fontFamily: FONTS.bold,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
   },
   seeAllRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 4,
   },
   seeAllText: {
     fontFamily: FONTS.medium,
     fontSize: 13,
-    color: COLORS.text.secondary,
+    color: '#B4B6B5',
   },
-  libraryCardsRow: {
+  innerTilesRow: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: SIZES.lg,
   },
-  libCard: {
+  innerTile: {
     flex: 1,
-    height: 125,
-    borderRadius: 16,
+    backgroundColor: '#1B1B1B',
+    borderRadius: 12,
     padding: 14,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  cardIconCircle: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  tileSquareIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#1F1F1F',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 12,
   },
-  cardTitle: {
+  tileTitle: {
     fontFamily: FONTS.bold,
     fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
+    marginBottom: 4,
   },
-  cardMeta: {
+  tileMeta: {
     fontFamily: FONTS.regular,
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.75)',
-    marginTop: 2,
+    color: '#B4B6B5',
   },
-  statsCard: {
+  statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    borderRadius: 16,
-    backgroundColor: 'rgba(10, 20, 42, 0.85)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.2)',
-    paddingVertical: SIZES.md,
-    paddingHorizontal: SIZES.sm,
-    marginBottom: SIZES.lg,
+    paddingVertical: 4,
   },
   statColumn: {
     flex: 1,
@@ -476,76 +434,74 @@ const styles = StyleSheet.create({
   statNumber: {
     fontFamily: FONTS.bold,
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#FFFFFF',
     marginTop: 8,
   },
   statLabel: {
     fontFamily: FONTS.regular,
-    fontSize: 11,
-    color: '#8A99AD',
-    marginTop: 2,
+    fontSize: 12,
+    color: '#B4B6B5',
+    marginTop: 3,
   },
   statDivider: {
     width: 1,
-    height: 36,
-    backgroundColor: 'rgba(0, 212, 255, 0.15)',
+    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   genderSelectSection: {
-    marginBottom: SIZES.lg,
+    marginBottom: 16,
   },
   subSectionTitle: {
     fontFamily: FONTS.bold,
     fontSize: 11,
     letterSpacing: 1.5,
-    color: '#8A99AD',
-    marginBottom: SIZES.xs,
+    color: '#B4B6B5',
+    marginBottom: 10,
   },
   genderPillsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
   genderSelectPill: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: 'rgba(10, 20, 42, 0.7)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.2)',
+    paddingVertical: 12,
+    borderRadius: 20,
+    backgroundColor: '#1B1B1B',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   genderSelectPillActive: {
-    backgroundColor: COLORS.accent.cyan,
-    borderColor: COLORS.accent.cyan,
+    backgroundColor: '#FCFCFC',
   },
   genderSelectText: {
     fontFamily: FONTS.medium,
-    fontSize: 12,
+    fontSize: 13,
+    color: '#B4B6B5',
     fontWeight: '600',
-    color: '#FFFFFF',
   },
   genderSelectTextActive: {
-    color: '#060B18',
+    color: '#000000',
     fontWeight: '700',
   },
   aboutCard: {
     borderRadius: 16,
-    backgroundColor: 'rgba(10, 20, 42, 0.85)',
+    backgroundColor: '#0E0E0E',
     borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.2)',
-    padding: SIZES.md,
-    marginBottom: SIZES.lg,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    padding: 16,
+    marginBottom: 16,
   },
   aboutRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   aboutLabel: {
     fontFamily: FONTS.regular,
     fontSize: 14,
-    color: '#8A99AD',
+    color: '#B4B6B5',
   },
   aboutValue: {
     fontFamily: FONTS.medium,
@@ -555,18 +511,18 @@ const styles = StyleSheet.create({
   aboutLink: {
     fontFamily: FONTS.medium,
     fontSize: 14,
-    color: COLORS.accent.cyan,
+    color: '#FFFFFF',
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    marginVertical: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    marginVertical: 4,
   },
   footerNote: {
     fontFamily: FONTS.medium,
     fontSize: 11,
     letterSpacing: 2,
-    color: '#4E5D78',
+    color: '#B4B6B5',
     textAlign: 'center',
     marginVertical: SIZES.md,
   },

@@ -76,26 +76,16 @@ export const CdTurntable: React.FC<CdTurntableProps> = ({
 
   return (
     <View style={styles.turntableContainer}>
-      {/* Background Glowing Ambient Aura */}
-      <View style={styles.ambientAura} />
-
       {/* SVG Concentric Groove Rings & Circular Progress Arc */}
       <View style={styles.svgWrapper}>
         <Svg width={DISC_SIZE} height={DISC_SIZE}>
-          <Defs>
-            <LinearGradient id="cyanArcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <Stop offset="0%" stopColor="#00F0FF" />
-              <Stop offset="100%" stopColor="#00A3FF" />
-            </LinearGradient>
-          </Defs>
-
           {/* Outer chassis ring */}
           <Circle
             cx={DISC_SIZE / 2}
             cy={DISC_SIZE / 2}
             r={RADIUS + 6}
-            stroke="rgba(0, 212, 255, 0.12)"
-            strokeWidth="1.5"
+            stroke="rgba(255, 255, 255, 0.15)"
+            strokeWidth="1"
             fill="none"
           />
 
@@ -105,14 +95,14 @@ export const CdTurntable: React.FC<CdTurntableProps> = ({
             cy={DISC_SIZE / 2}
             r={RADIUS}
             stroke="rgba(255, 255, 255, 0.08)"
-            strokeWidth="4"
+            strokeWidth="3"
             fill="none"
           />
           <Circle
             cx={DISC_SIZE / 2}
             cy={DISC_SIZE / 2}
             r={RADIUS - 16}
-            stroke="rgba(0, 212, 255, 0.09)"
+            stroke="rgba(255, 255, 255, 0.05)"
             strokeWidth="1"
             strokeDasharray="4 6"
             fill="none"
@@ -121,18 +111,18 @@ export const CdTurntable: React.FC<CdTurntableProps> = ({
             cx={DISC_SIZE / 2}
             cy={DISC_SIZE / 2}
             r={RADIUS - 28}
-            stroke="rgba(255, 255, 255, 0.05)"
+            stroke="rgba(255, 255, 255, 0.04)"
             strokeWidth="1"
             fill="none"
           />
 
-          {/* Active Glowing Circular Progress Arc */}
+          {/* Active Pure White Circular Progress Arc */}
           <Circle
             cx={DISC_SIZE / 2}
             cy={DISC_SIZE / 2}
             r={RADIUS}
-            stroke="url(#cyanArcGrad)"
-            strokeWidth="4.5"
+            stroke="#FFFFFF"
+            strokeWidth="3.5"
             strokeDasharray={CIRCUMFERENCE}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
@@ -158,7 +148,7 @@ export const CdTurntable: React.FC<CdTurntableProps> = ({
         </View>
       </Animated.View>
 
-      {/* Heart Icon at top */}
+      {/* Heart Icon at top inside arc */}
       <TouchableOpacity
         style={styles.heartWrapper}
         onPress={onToggleLike}
@@ -166,13 +156,13 @@ export const CdTurntable: React.FC<CdTurntableProps> = ({
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Heart
-          color={isLiked ? COLORS.accent.cyan : '#8A99AD'}
-          fill={isLiked ? COLORS.accent.cyan : 'transparent'}
-          size={20}
+          color="#FFFFFF"
+          fill={isLiked ? '#FFFFFF' : 'transparent'}
+          size={22}
         />
       </TouchableOpacity>
 
-      {/* Digital Time Readout: 0:45 / 3:18 */}
+      {/* Digital Time Readout: 0:46 / 3:18 */}
       <View style={styles.timeBadge}>
         <Text style={styles.timeText}>
           {formatTime(position)} <Text style={styles.timeDivider}>/</Text> {formatTime(duration)}
@@ -191,18 +181,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginVertical: SIZES.sm,
   },
-  ambientAura: {
-    position: 'absolute',
-    width: DISC_SIZE * 0.9,
-    height: DISC_SIZE * 0.9,
-    borderRadius: (DISC_SIZE * 0.9) / 2,
-    backgroundColor: 'rgba(0, 212, 255, 0.14)',
-    shadowColor: COLORS.accent.cyan,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 36,
-    elevation: 8,
-  },
   svgWrapper: {
     position: 'absolute',
     width: DISC_SIZE,
@@ -214,17 +192,12 @@ const styles = StyleSheet.create({
     width: DISC_SIZE * 0.54,
     height: DISC_SIZE * 0.54,
     borderRadius: (DISC_SIZE * 0.54) / 2,
-    backgroundColor: '#0A1224',
-    borderWidth: 3,
-    borderColor: 'rgba(0, 212, 255, 0.4)',
+    backgroundColor: '#000000',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.accent.cyan,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 6,
   },
   centerArt: {
     width: '100%',
@@ -236,9 +209,9 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(10, 18, 36, 0.85)',
+    backgroundColor: '#000000',
     borderWidth: 1.5,
-    borderColor: COLORS.accent.cyan,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -246,35 +219,31 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#060B18',
+    backgroundColor: '#1B1B1B',
   },
   heartWrapper: {
     position: 'absolute',
-    top: 6,
+    top: 10,
     alignSelf: 'center',
     padding: 6,
     zIndex: 10,
   },
   timeBadge: {
     position: 'absolute',
-    bottom: 2,
+    bottom: 4,
     alignSelf: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 12,
-    backgroundColor: 'rgba(10, 20, 42, 0.8)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.25)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
   },
   timeText: {
     fontFamily: FONTS.medium,
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#B4B6B5',
     letterSpacing: 0.5,
   },
   timeDivider: {
-    color: COLORS.accent.cyan,
+    color: '#666666',
     fontWeight: '400',
   },
 });

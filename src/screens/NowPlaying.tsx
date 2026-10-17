@@ -25,6 +25,7 @@ import {
   ListPlus,
   X,
   FileText,
+  MoreHorizontal,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
@@ -88,17 +89,19 @@ export default function NowPlayingScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Background artwork blur */}
-      <Image
-        source={{ uri: currentTrack.albumImageUrl }}
-        style={StyleSheet.absoluteFill}
-        blurRadius={80}
-      />
-      <LinearGradient
-        colors={['rgba(6, 11, 24, 0.65)', '#060B18', '#03060C']}
-        locations={[0, 0.45, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+      {/* Top Hero Photo (full-bleed top 42% of screen) */}
+      <View style={styles.heroBackgroundContainer}>
+        <Image
+          source={require('../../assets/ui/hero_now_playing.jpg')}
+          style={styles.heroBackgroundImage}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={['transparent', 'rgba(13, 13, 13, 0.6)', '#0D0D0D']}
+          locations={[0.2, 0.7, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
 
       <ScrollView
         ref={scrollViewRef}
@@ -108,33 +111,33 @@ export default function NowPlayingScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Top Header */}
+        {/* Top Header: White Circles with Black Icons */}
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={styles.headerIconBtn}
+            style={styles.whiteHeaderIconBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <ChevronDown color="#FFFFFF" size={26} />
+            <ChevronDown color="#000000" size={22} strokeWidth={2.5} />
           </TouchableOpacity>
 
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerSub}>PLAYING FROM</Text>
             <Text style={styles.headerTitle} numberOfLines={1}>
-              {queueContext || 'SONIQ'}
+              {queueContext || 'SONIC CUBE'}
             </Text>
           </View>
 
           <TouchableOpacity
-            style={styles.headerIconBtn}
+            style={styles.whiteHeaderIconBtn}
             onPress={() => setAddingTrack(currentTrack)}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <ListPlus color="#FFFFFF" size={22} />
+            <MoreHorizontal color="#000000" size={20} strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
 
-        {/* CD-Style Turntable Centerpiece matching PDF Page 6 */}
+        {/* CD-Style Turntable Centerpiece */}
         <CdTurntable
           albumImageUrl={currentTrack.albumImageUrl}
           isPlaying={isPlaying}
@@ -157,7 +160,7 @@ export default function NowPlayingScreen() {
           <SeekBar onSeek={seekTo} />
         </View>
 
-        {/* Playback Controls Row matching PDF Page 6 */}
+        {/* Playback Controls Row */}
         <View style={styles.controlsRow}>
           {/* Shuffle */}
           <TouchableOpacity
@@ -165,7 +168,7 @@ export default function NowPlayingScreen() {
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
             <Shuffle
-              color={shuffle ? COLORS.accent.cyan : '#6B7C96'}
+              color={shuffle ? '#FFFFFF' : '#777777'}
               size={22}
               strokeWidth={shuffle ? 2.5 : 2}
             />
@@ -179,20 +182,22 @@ export default function NowPlayingScreen() {
             <SkipBack color="#FFFFFF" size={28} />
           </TouchableOpacity>
 
-          {/* Large Glowing Electric Cyan Play/Pause Button */}
-          <TouchableOpacity
-            style={styles.cyanPlayButton}
-            onPress={togglePlayPause}
-            activeOpacity={0.85}
-          >
-            {busy ? (
-              <ActivityIndicator color="#060B18" size="small" />
-            ) : isPlaying ? (
-              <Pause color="#060B18" size={30} fill="#060B18" />
-            ) : (
-              <Play color="#060B18" size={30} fill="#060B18" style={{ marginLeft: 3 }} />
-            )}
-          </TouchableOpacity>
+          {/* Large White Play/Pause Button inside Dark Ring */}
+          <View style={styles.playButtonRing}>
+            <TouchableOpacity
+              style={styles.whitePlayButton}
+              onPress={togglePlayPause}
+              activeOpacity={0.85}
+            >
+              {busy ? (
+                <ActivityIndicator color="#000000" size="small" />
+              ) : isPlaying ? (
+                <Pause color="#000000" size={30} fill="#000000" />
+              ) : (
+                <Play color="#000000" size={30} fill="#000000" style={{ marginLeft: 3 }} />
+              )}
+            </TouchableOpacity>
+          </View>
 
           {/* Next Track */}
           <TouchableOpacity
@@ -208,10 +213,10 @@ export default function NowPlayingScreen() {
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
             {repeat === 'one' ? (
-              <Repeat1 color={COLORS.accent.cyan} size={22} strokeWidth={2.5} />
+              <Repeat1 color="#FFFFFF" size={22} strokeWidth={2.5} />
             ) : (
               <Repeat
-                color={repeat === 'all' ? COLORS.accent.cyan : '#6B7C96'}
+                color={repeat === 'all' ? '#FFFFFF' : '#777777'}
                 size={22}
                 strokeWidth={repeat === 'all' ? 2.5 : 2}
               />
@@ -219,33 +224,28 @@ export default function NowPlayingScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Bottom Actions Row: Audio Source, Lyrics Pill, Queue Toggle */}
-        <View style={styles.bottomActionsRow}>
+        {/* Bottom Dark Pill Bar: #111110, radius 24 */}
+        <View style={styles.bottomPillBar}>
           <TouchableOpacity
-            style={styles.bottomActionIcon}
             onPress={() => setShowSource(true)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <MonitorSpeaker color="#8A99AD" size={22} />
+            <MonitorSpeaker color="#FFFFFF" size={20} />
           </TouchableOpacity>
 
-          {/* Lyrics Button with Neon Cyan Pill */}
           <TouchableOpacity
-            style={[styles.lyricsPill, showLyrics && styles.lyricsPillActive]}
             onPress={toggleLyricsView}
             activeOpacity={0.8}
+            style={styles.lyricsTouchCenter}
           >
-            <Text style={[styles.lyricsPillText, showLyrics && styles.lyricsPillTextActive]}>
-              Lyrics
-            </Text>
+            <Text style={styles.lyricsPillText}>Lyrics</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.bottomActionIcon}
             onPress={() => setShowQueue(!showQueue)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <ListMusic color={showQueue ? COLORS.accent.cyan : '#8A99AD'} size={22} />
+            <ListMusic color="#FFFFFF" size={20} />
           </TouchableOpacity>
         </View>
 
@@ -314,8 +314,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  heroBackgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: Dimensions.get('window').height * 0.45,
+    overflow: 'hidden',
+  },
+  heroBackgroundImage: {
+    width: '100%',
+    height: '100%',
+  },
   contentContainer: {
-    paddingHorizontal: SIZES.lg,
+    paddingHorizontal: 20,
   },
   header: {
     flexDirection: 'row',
@@ -323,15 +335,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SIZES.xs,
   },
-  headerIconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(10, 20, 42, 0.7)',
+  whiteHeaderIconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: COLORS.activeWhite,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.2)',
   },
   headerTextContainer: {
     alignItems: 'center',
@@ -340,7 +350,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.medium,
     fontSize: 10,
     letterSpacing: 1.5,
-    color: '#8A99AD',
+    color: COLORS.text.secondary,
   },
   headerTitle: {
     fontFamily: FONTS.bold,
@@ -365,7 +375,7 @@ const styles = StyleSheet.create({
   trackArtist: {
     fontFamily: FONTS.regular,
     fontSize: 15,
-    color: '#8A99AD',
+    color: COLORS.text.secondary,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -379,54 +389,52 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIZES.sm,
     marginVertical: SIZES.sm,
   },
-  cyanPlayButton: {
+  playButtonRing: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: COLORS.tabBar,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  whitePlayButton: {
     width: 66,
     height: 66,
     borderRadius: 33,
-    backgroundColor: COLORS.accent.cyan,
+    backgroundColor: COLORS.activeWhite,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.accent.cyan,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.8,
-    shadowRadius: 18,
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
     elevation: 8,
   },
-  bottomActionsRow: {
+  bottomPillBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: SIZES.lg,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.tabBar,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 20,
     marginTop: SIZES.xs,
     marginBottom: SIZES.md,
   },
-  bottomActionIcon: {
-    padding: 8,
-  },
-  lyricsPill: {
-    paddingHorizontal: 22,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: 'rgba(10, 20, 42, 0.75)',
-    borderWidth: 1.2,
-    borderColor: 'rgba(0, 212, 255, 0.35)',
-  },
-  lyricsPillActive: {
-    backgroundColor: COLORS.accent.cyan,
-    borderColor: COLORS.accent.cyan,
-    shadowColor: COLORS.accent.cyan,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.7,
-    shadowRadius: 8,
+  lyricsTouchCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   lyricsPillText: {
     fontFamily: FONTS.bold,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
-  },
-  lyricsPillTextActive: {
-    color: '#060B18',
   },
   lyricsCardContainer: {
     marginTop: SIZES.sm,
@@ -436,9 +444,7 @@ const styles = StyleSheet.create({
     marginTop: SIZES.md,
     padding: SIZES.md,
     borderRadius: 16,
-    backgroundColor: 'rgba(10, 20, 42, 0.85)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.2)',
+    backgroundColor: COLORS.surface,
   },
   queueHeader: {
     flexDirection: 'row',

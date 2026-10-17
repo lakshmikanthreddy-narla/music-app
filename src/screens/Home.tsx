@@ -33,22 +33,27 @@ const CATEGORIES = ['All', 'Music', 'Podcasts', 'Chill', 'Workout'];
 const greetingFor = (hour: number) =>
   hour < 12 ? 'Good Morning!' : hour < 18 ? 'Good Afternoon!' : 'Good Evening!';
 
-// Curated collections matching PDF Page 3
+// Curated collections matching reference screen 2
 const RECENT_CARDS = [
-  { id: 'recent_1', title: 'Chill Hits', type: 'Playlist', query: 'chill hits relax', image: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400&q=80' },
-  { id: 'recent_2', title: 'Arijit Singh', type: 'Artist', query: 'arijit singh best songs', image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80' },
-  { id: 'recent_3', title: "Today's Mix", type: 'Playlist', query: 'todays top hits', image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&q=80' },
-  { id: 'recent_4', title: 'Rock', type: 'Playlist', query: 'classic rock hits', image: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=400&q=80' },
+  { id: 'recent_1', title: 'Chill Hits', type: 'Playlist', query: 'chill hits relax', image: require('../../assets/ui/recent_chill.jpg') },
+  { id: 'recent_2', title: 'Arijit Singh', type: 'Artist', query: 'arijit singh best songs', image: require('../../assets/ui/recent_arijit.jpg') },
+  { id: 'recent_3', title: "Today's Mix", type: 'Playlist', query: 'todays top hits', image: require('../../assets/ui/recent_today.jpg') },
+  { id: 'recent_4', title: 'Rock', type: 'Playlist', query: 'classic rock hits', image: require('../../assets/ui/recent_rock.jpg') },
 ];
 
 const MADE_FOR_YOU = [
-  { id: 'mfy_1', title: 'Discover Weekly', subtitle: 'New music for you', query: 'discover weekly new music', image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80' },
-  { id: 'mfy_2', title: 'Daily Mix 1', subtitle: 'Based on your listening', query: 'daily mix pop chill', image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&q=80' },
+  { id: 'mfy_1', title: 'Discover Weekly', subtitle: 'Made for Antony', query: 'discover weekly new music', image: require('../../assets/ui/mfy_discover.jpg') },
+  { id: 'mfy_2', title: 'Daily Mix 1', subtitle: 'Arijit Singh, Pritam', query: 'daily mix pop chill', image: require('../../assets/ui/mfy_daily.jpg') },
 ];
 
-const TRENDING_NOW = [
-  { id: 'trend_1', title: 'Top 50 Global', subtitle: 'Daily Chart', query: 'top 50 global songs', gradient: ['#13274F', '#091326'] as const, image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=500&q=80' },
-  { id: 'trend_2', title: 'Viral Hits India', subtitle: 'Top Trending', query: 'viral hits india', gradient: ['#0A4D3C', '#07241D'] as const, image: 'https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?w=500&q=80' },
+const TRENDING_ROW_1 = [
+  { id: 'trend_1', title: 'Top 50 Global', subtitle: 'One Lista', query: 'top 50 global songs', image: require('../../assets/ui/trend_top50.jpg') },
+  { id: 'trend_2', title: 'Viral Hits India', subtitle: 'One Rurno', query: 'viral hits india', image: require('../../assets/ui/trend_viral.jpg') },
+];
+
+const TRENDING_ROW_2 = [
+  { id: 'trend_3', title: 'Pop Rising', subtitle: 'Global Hits', query: 'pop rising hits', image: require('../../assets/ui/trend_c.jpg') },
+  { id: 'trend_4', title: 'Mega Hit Mix', subtitle: 'Trending Now', query: 'mega hit mix', image: require('../../assets/ui/trend_d.jpg') },
 ];
 
 export default function HomeScreen() {
@@ -122,13 +127,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Background Gradient */}
-      <LinearGradient
-        colors={['#0A1326', '#060B18', '#040710']}
-        locations={[0, 0.4, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-
       {/* Sticky Header: Profile Avatar, Greeting, Name, Notification Bell */}
       <View style={[styles.headerContainer, { paddingTop: insets.top + SIZES.sm }]}>
         <View style={styles.topRow}>
@@ -137,13 +135,15 @@ export default function HomeScreen() {
             activeOpacity={0.8}
             onPress={() => navigation.navigate('ProfileTab' as never)}
           >
-            <View style={styles.avatarInner}>
-              <User color={COLORS.accent.cyan} size={24} />
-            </View>
+            <Image
+              source={require('../../assets/ui/home_avatar.jpg')}
+              style={styles.avatarInner}
+              resizeMode="cover"
+            />
           </TouchableOpacity>
 
           <View style={styles.greetingWrapper}>
-            <Text style={styles.greetingText}>{greetingFor(new Date().getHours())}</Text>
+            <Text style={styles.greetingText}>Good Morning!</Text>
             <Text style={styles.userName} numberOfLines={1}>
               {profile.name || 'Antony Das'}
             </Text>
@@ -154,8 +154,7 @@ export default function HomeScreen() {
             activeOpacity={0.7}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Bell color="#FFFFFF" size={22} />
-            <View style={styles.bellDot} />
+            <Bell color="#FFFFFF" size={20} />
           </TouchableOpacity>
         </View>
 
@@ -191,7 +190,7 @@ export default function HomeScreen() {
             onPress={() => navigation.navigate('LibraryTab' as never)}
           >
             <Text style={styles.seeAll}>See all</Text>
-            <ChevronRight color={COLORS.text.secondary} size={14} />
+            <ChevronRight color={COLORS.text.meta} size={14} />
           </TouchableOpacity>
         </View>
 
@@ -208,16 +207,12 @@ export default function HomeScreen() {
               onPress={() => playCollection(item.id, item.title, item.query)}
             >
               <View style={styles.recentImageContainer}>
-                <Image source={{ uri: item.image }} style={styles.recentImage} />
+                <Image source={item.image} style={styles.recentImage} resizeMode="cover" />
                 {loadingCardId === item.id ? (
                   <View style={styles.imageOverlayCenter}>
-                    <ActivityIndicator size="small" color={COLORS.accent.cyan} />
+                    <ActivityIndicator size="small" color="#FFFFFF" />
                   </View>
-                ) : (
-                  <View style={styles.playMiniBadge}>
-                    <Play color="#060B18" size={12} fill="#060B18" />
-                  </View>
-                )}
+                ) : null}
               </View>
               <Text style={styles.recentCardTitle} numberOfLines={1}>{item.title}</Text>
               <Text style={styles.recentCardType} numberOfLines={1}>{item.type}</Text>
@@ -234,26 +229,22 @@ export default function HomeScreen() {
           {MADE_FOR_YOU.map(item => (
             <TouchableOpacity
               key={item.id}
-              style={styles.gridCard}
+              style={styles.mfyCard}
               activeOpacity={0.85}
               onPress={() => playCollection(item.id, item.title, item.query)}
             >
-              <Image source={{ uri: item.image }} style={styles.gridCardImage} />
+              <Image source={item.image} style={styles.mfyImage} resizeMode="cover" />
               <LinearGradient
-                colors={['transparent', 'rgba(6, 11, 24, 0.95)']}
-                locations={[0.3, 1]}
+                colors={['transparent', 'rgba(13, 13, 13, 0.92)']}
+                locations={[0.2, 1]}
                 style={StyleSheet.absoluteFill}
               />
-              <View style={styles.gridCardContent}>
+              <View style={styles.mfyContent}>
                 {loadingCardId === item.id ? (
-                  <ActivityIndicator size="small" color={COLORS.accent.cyan} style={styles.gridLoader} />
-                ) : (
-                  <View style={styles.cyanPlayBadge}>
-                    <Play color="#060B18" size={14} fill="#060B18" />
-                  </View>
-                )}
-                <Text style={styles.gridCardTitle} numberOfLines={1}>{item.title}</Text>
-                <Text style={styles.gridCardSubtitle} numberOfLines={1}>{item.subtitle}</Text>
+                  <ActivityIndicator size="small" color="#FFFFFF" style={{ marginBottom: 4 }} />
+                ) : null}
+                <Text style={styles.mfyTitle} numberOfLines={1}>{item.title}</Text>
+                <Text style={styles.mfySubtitle} numberOfLines={1}>{item.subtitle}</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -265,29 +256,45 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.twoColumnGrid}>
-          {TRENDING_NOW.map(item => (
+          {TRENDING_ROW_1.map(item => (
             <TouchableOpacity
               key={item.id}
-              style={styles.gridCard}
+              style={styles.trendCard}
               activeOpacity={0.85}
               onPress={() => playCollection(item.id, item.title, item.query)}
             >
-              <Image source={{ uri: item.image }} style={styles.gridCardImage} />
+              <Image source={item.image} style={styles.trendImage} resizeMode="cover" />
               <LinearGradient
-                colors={['transparent', 'rgba(6, 11, 24, 0.92)']}
-                locations={[0.2, 1]}
+                colors={['transparent', 'rgba(13, 13, 13, 0.88)']}
+                locations={[0.1, 1]}
                 style={StyleSheet.absoluteFill}
               />
-              <View style={styles.gridCardContent}>
-                {loadingCardId === item.id ? (
-                  <ActivityIndicator size="small" color={COLORS.accent.cyan} style={styles.gridLoader} />
-                ) : (
-                  <View style={styles.cyanPlayBadge}>
-                    <Play color="#060B18" size={14} fill="#060B18" />
-                  </View>
-                )}
-                <Text style={styles.gridCardTitle} numberOfLines={1}>{item.title}</Text>
-                <Text style={styles.gridCardSubtitle} numberOfLines={1}>{item.subtitle}</Text>
+              <View style={styles.trendContent}>
+                <Text style={styles.trendTitle} numberOfLines={1}>{item.title}</Text>
+                <Text style={styles.trendSubtitle} numberOfLines={1}>{item.subtitle}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Trending Row 2 */}
+        <View style={[styles.twoColumnGrid, { marginTop: 10 }]}>
+          {TRENDING_ROW_2.map(item => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.trendCard}
+              activeOpacity={0.85}
+              onPress={() => playCollection(item.id, item.title, item.query)}
+            >
+              <Image source={item.image} style={styles.trendImage} resizeMode="cover" />
+              <LinearGradient
+                colors={['transparent', 'rgba(13, 13, 13, 0.88)']}
+                locations={[0.1, 1]}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={styles.trendContent}>
+                <Text style={styles.trendTitle} numberOfLines={1}>{item.title}</Text>
+                <Text style={styles.trendSubtitle} numberOfLines={1}>{item.subtitle}</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -347,7 +354,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   headerContainer: {
-    paddingHorizontal: SIZES.md,
+    paddingHorizontal: 16,
     backgroundColor: 'transparent',
     zIndex: 10,
   },
@@ -360,23 +367,13 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    padding: 2,
-    borderWidth: 1.5,
-    borderColor: COLORS.accent.cyan,
-    shadowColor: COLORS.accent.cyan,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    overflow: 'hidden',
+    backgroundColor: COLORS.surface,
   },
   avatarInner: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#0F1E3D',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 46,
+    height: 46,
+    borderRadius: 23,
   },
   greetingWrapper: {
     flex: 1,
@@ -385,69 +382,57 @@ const styles = StyleSheet.create({
   greetingText: {
     fontFamily: FONTS.regular,
     fontSize: 13,
-    color: '#8A99AD',
+    color: COLORS.text.secondary,
   },
   userName: {
     fontFamily: FONTS.bold,
     fontSize: 20,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: COLORS.text.primary,
     marginTop: 1,
   },
   bellButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(13, 27, 54, 0.7)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.2)',
-  },
-  bellDot: {
-    position: 'absolute',
-    top: 10,
-    right: 11,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: COLORS.accent.cyan,
   },
   pillsScroll: {
     paddingVertical: 4,
     paddingRight: SIZES.md,
   },
   scrollContent: {
-    paddingHorizontal: SIZES.md,
-    paddingTop: SIZES.md,
+    paddingHorizontal: 16,
+    paddingTop: SIZES.sm,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: SIZES.lg,
-    marginBottom: SIZES.md,
-    paddingHorizontal: 2,
+    marginTop: 22,
+    marginBottom: 12,
   },
   sectionTitle: {
     fontFamily: FONTS.bold,
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: COLORS.text.primary,
   },
   seeAllRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 3,
   },
   seeAll: {
     fontFamily: FONTS.medium,
     fontSize: 13,
-    color: COLORS.text.secondary,
+    color: COLORS.text.meta,
   },
   recentCardsScroll: {
     paddingRight: SIZES.md,
-    gap: 14,
+    gap: 12,
   },
   recentCard: {
     width: 120,
@@ -458,26 +443,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#0F1E3D',
+    backgroundColor: COLORS.surface,
   },
   recentImage: {
     width: '100%',
     height: '100%',
-  },
-  playMiniBadge: {
-    position: 'absolute',
-    right: 8,
-    bottom: 8,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: COLORS.accent.cyan,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: COLORS.accent.cyan,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
   },
   imageOverlayCenter: {
     position: 'absolute',
@@ -485,7 +455,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(6, 11, 24, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -493,67 +463,78 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.medium,
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: COLORS.text.primary,
     marginTop: 8,
   },
   recentCardType: {
     fontFamily: FONTS.regular,
     fontSize: 12,
-    color: '#8A99AD',
+    color: COLORS.text.secondary,
     marginTop: 2,
   },
   twoColumnGrid: {
     flexDirection: 'row',
     gap: 12,
   },
-  gridCard: {
+  mfyCard: {
     flex: 1,
-    height: 135,
+    height: 125,
     borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#0F1E3D',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.15)',
+    backgroundColor: COLORS.surface,
   },
-  gridCardImage: {
+  mfyImage: {
     width: '100%',
     height: '100%',
   },
-  gridCardContent: {
+  mfyContent: {
     position: 'absolute',
     left: 12,
     right: 12,
     bottom: 12,
   },
-  gridLoader: {
-    alignSelf: 'flex-start',
-    marginBottom: 6,
-  },
-  cyanPlayBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: COLORS.accent.cyan,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-    shadowColor: COLORS.accent.cyan,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
-  },
-  gridCardTitle: {
+  mfyTitle: {
     fontFamily: FONTS.bold,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: COLORS.text.primary,
   },
-  gridCardSubtitle: {
+  mfySubtitle: {
     fontFamily: FONTS.regular,
     fontSize: 11,
-    color: '#8A99AD',
+    color: COLORS.text.secondary,
     marginTop: 2,
+  },
+  trendCard: {
+    flex: 1,
+    height: 72,
+    borderRadius: 14,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: COLORS.surface,
+  },
+  trendImage: {
+    width: '100%',
+    height: '100%',
+  },
+  trendContent: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 10,
+  },
+  trendTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.text.primary,
+  },
+  trendSubtitle: {
+    fontFamily: FONTS.regular,
+    fontSize: 11,
+    color: COLORS.text.secondary,
+    marginTop: 1,
   },
   listContainer: {
     marginBottom: SIZES.lg,

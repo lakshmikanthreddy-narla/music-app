@@ -42,17 +42,11 @@ export default function ProfileSetupScreen() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <View style={[styles.container, { paddingTop: insets.top + SIZES.xl }]}>
-        <LinearGradient
-          colors={['#0A1326', '#060B18', '#040710']}
-          locations={[0, 0.45, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-
         <View style={styles.header}>
           <Text style={styles.kicker}>STEP 2 OF 2</Text>
           <Text style={styles.title}>Who's listening?</Text>
           <Text style={styles.subtitle}>
-            Personalize your experience on SONIQ. Stays on this device.
+            Personalize your experience on Sonic Cube. Stays on this device.
           </Text>
         </View>
 
@@ -63,7 +57,7 @@ export default function ProfileSetupScreen() {
             value={name}
             onChangeText={setName}
             placeholder="e.g. Antony Das"
-            placeholderTextColor="#6B7C96"
+            placeholderTextColor="#666666"
             autoCapitalize="words"
             autoCorrect={false}
             returnKeyType="done"
@@ -97,7 +91,7 @@ export default function ProfileSetupScreen() {
               {name.trim() ? `Continue as ${name.trim()}` : 'Start Listening'}
             </Text>
             <View style={styles.iconCircle}>
-              <ArrowRight color="#060B18" size={20} strokeWidth={2.5} />
+              <ArrowRight color="#000000" size={20} strokeWidth={2.5} />
             </View>
           </TouchableOpacity>
         </View>
@@ -119,7 +113,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bold,
     fontSize: 11,
     letterSpacing: 2,
-    color: COLORS.accent.cyan,
+    color: '#B4B6B5',
     marginBottom: SIZES.sm,
   },
   title: {
@@ -132,7 +126,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: FONTS.regular,
     fontSize: 14,
-    color: '#8A99AD',
+    color: '#B4B6B5',
     lineHeight: 20,
   },
   form: {
@@ -142,7 +136,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bold,
     fontSize: 11,
     letterSpacing: 1.5,
-    color: '#8A99AD',
+    color: '#B4B6B5',
     marginBottom: SIZES.sm,
   },
   labelSpaced: {
@@ -152,10 +146,10 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.medium,
     fontSize: 17,
     color: '#FFFFFF',
-    backgroundColor: 'rgba(10, 20, 42, 0.85)',
+    backgroundColor: '#1B1B1B',
     borderRadius: 14,
-    borderWidth: 1.2,
-    borderColor: 'rgba(0, 212, 255, 0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     paddingHorizontal: SIZES.md,
     paddingVertical: SIZES.md,
   },
@@ -168,25 +162,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIZES.md,
     paddingVertical: SIZES.sm + 2,
     borderRadius: SIZES.radius.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.2)',
-    backgroundColor: 'rgba(10, 20, 42, 0.7)',
+    backgroundColor: '#1B1B1B',
   },
   genderPillActive: {
-    backgroundColor: COLORS.accent.cyan,
-    borderColor: COLORS.accent.cyan,
-    shadowColor: COLORS.accent.cyan,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
+    backgroundColor: '#FCFCFC',
   },
   genderText: {
     fontFamily: FONTS.medium,
     fontSize: 13,
-    color: '#8A99AD',
+    color: '#B4B6B5',
   },
   genderTextActive: {
-    color: '#060B18',
+    color: '#000000',
     fontWeight: '700',
   },
   footer: {
@@ -196,19 +183,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(10, 20, 42, 0.85)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 212, 255, 0.35)',
+    backgroundColor: '#1B1B1B',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 31,
     paddingVertical: SIZES.sm,
     paddingLeft: SIZES.lg,
     paddingRight: SIZES.sm,
     height: 60,
-    shadowColor: COLORS.accent.cyan,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 6,
   },
   buttonText: {
     fontFamily: FONTS.bold,
@@ -222,10 +204,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.accent.cyan,
-    shadowColor: COLORS.accent.cyan,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
+    backgroundColor: '#FCFCFC',
   },
 });

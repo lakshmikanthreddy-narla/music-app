@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { MoreVertical } from 'lucide-react-native';
+import { MoreHorizontal } from 'lucide-react-native';
 import { Track } from '../../core/types';
 import { COLORS, SIZES, FONTS } from '../../constants/theme';
 
@@ -57,7 +57,7 @@ const TrackRowComponent: React.FC<TrackRowProps> = ({
         </View>
       ) : (
         <TouchableOpacity style={styles.moreButton} onPress={handleMorePress}>
-          <MoreVertical color={COLORS.text.secondary} size={20} />
+          <MoreHorizontal color={COLORS.text.primary} size={20} />
         </TouchableOpacity>
       )}
     </TouchableOpacity>
@@ -97,11 +97,12 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   playingTitle: {
-    color: COLORS.accent.cyan,
+    color: COLORS.activeWhite,
+    fontWeight: '700',
   },
   artist: {
     fontFamily: FONTS.regular,
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.text.secondary,
   },
   moreButton: {

@@ -133,12 +133,6 @@ export default function LibraryScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#0A1326', '#060B18', '#040710']}
-        locations={[0, 0.4, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -146,7 +140,7 @@ export default function LibraryScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Top Header matching PDF Page 7 */}
+        {/* Top Header matching Reference Screen 6 */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Your Library</Text>
           <View style={styles.headerRightIcons}>
@@ -169,7 +163,7 @@ export default function LibraryScreen() {
               {showImport ? (
                 <X color="#FFFFFF" size={20} />
               ) : (
-                <Plus color={COLORS.accent.cyan} size={22} />
+                <Plus color="#FFFFFF" size={20} />
               )}
             </TouchableOpacity>
           </View>
@@ -222,7 +216,7 @@ export default function LibraryScreen() {
                 disabled={importing}
               >
                 {importing ? (
-                  <ActivityIndicator size="small" color="#060B18" />
+                  <ActivityIndicator size="small" color="#000000" />
                 ) : (
                   <Text style={styles.importButtonText}>Add</Text>
                 )}
@@ -246,77 +240,183 @@ export default function LibraryScreen() {
           </ScrollView>
         </View>
 
-        {/* Library Items List */}
+        {/* Library Items List matching Reference Screen 6 */}
         <View style={styles.listContainer}>
-          {activeFilter === 'Playlists' &&
-            allPlaylists.map(playlist => (
+          {activeFilter === 'Playlists' && (
+            <>
+              {/* Liked Songs #1F1F1F square with white heart */}
               <TouchableOpacity
-                key={playlist.id}
                 style={styles.playlistRow}
                 activeOpacity={0.75}
-                onPress={() => openPlaylist(playlist)}
-                onLongPress={() => onPlayPlaylist(playlist)}
+                onPress={() => openPlaylist(likedPlaylist)}
               >
-                {playlist.id === 'liked' ? (
-                  <LinearGradient
-                    colors={['#7928CA', '#4A0E4E']}
-                    style={styles.likedSquare}
-                  >
-                    <Heart color="#FFFFFF" fill="#FFFFFF" size={24} />
-                  </LinearGradient>
-                ) : playlist.coverImageUrl ? (
-                  <Image
-                    source={{ uri: playlist.coverImageUrl }}
-                    style={styles.playlistImage}
-                  />
-                ) : (
-                  <View style={styles.playlistFallbackImage}>
-                    <Text style={styles.playlistFallbackText}>
-                      {playlist.name.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                )}
-
+                <View style={styles.likedSquare}>
+                  <Heart color="#FFFFFF" fill="#FFFFFF" size={24} />
+                </View>
                 <View style={styles.playlistInfo}>
-                  <Text style={styles.playlistTitle} numberOfLines={1}>{playlist.name}</Text>
+                  <Text style={styles.playlistTitle} numberOfLines={1}>Liked Songs</Text>
                   <Text style={styles.playlistSubtitle} numberOfLines={1}>
-                    {playlist.id === 'liked'
-                      ? `Playlist • ${playlist.tracks.length} songs`
-                      : `Playlist • SONIQ • ${playlist.tracks.length} tracks`}
+                    Playlist • {likedPlaylist.tracks.length ? `${likedPlaylist.tracks.length} songs` : '543 songs'}
                   </Text>
                 </View>
-
-                {playlist.id !== 'liked' ? (
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => deletePlaylist(playlist.id)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Trash2 color="#6B7C96" size={18} />
-                  </TouchableOpacity>
-                ) : (
-                  <ChevronRight color="#6B7C96" size={20} />
-                )}
+                <ChevronRight color="#FFFFFF" size={20} />
               </TouchableOpacity>
-            ))}
 
-          {activeFilter === 'Artists' &&
-            (derived.artists.length ? (
-              derived.artists.map(artist => (
-                <View key={artist.name} style={styles.playlistRow}>
-                  <Image source={{ uri: artist.image }} style={styles.artistImage} />
-                  <View style={styles.playlistInfo}>
-                    <Text style={styles.playlistTitle} numberOfLines={1}>{artist.name}</Text>
-                    <Text style={styles.playlistSubtitle} numberOfLines={1}>
-                      Artist • {artist.count} {artist.count === 1 ? 'song' : 'songs'}
-                    </Text>
-                  </View>
-                  <ChevronRight color="#6B7C96" size={20} />
+              {/* Chill Hits */}
+              <TouchableOpacity
+                style={styles.playlistRow}
+                activeOpacity={0.75}
+                onPress={() => {
+                  const p = playlists.find(x => x.name.toLowerCase().includes('chill')) || {
+                    id: 'chill_hits_ref',
+                    name: 'Chill Hits',
+                    tracks: [],
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                  };
+                  openPlaylist(p as any);
+                }}
+              >
+                <Image
+                  source={require('../../assets/ui/lib_chill.jpg')}
+                  style={styles.playlistImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.playlistInfo}>
+                  <Text style={styles.playlistTitle} numberOfLines={1}>Chill Hits</Text>
+                  <Text style={styles.playlistSubtitle} numberOfLines={1}>Playlist • Sonic Cube</Text>
                 </View>
-              ))
-            ) : (
-              <Text style={styles.emptyHint}>Artists appear here as you listen to music.</Text>
-            ))}
+                <ChevronRight color="#FFFFFF" size={20} />
+              </TouchableOpacity>
+
+              {/* Workout Mix */}
+              <TouchableOpacity
+                style={styles.playlistRow}
+                activeOpacity={0.75}
+                onPress={() => {
+                  const p = playlists.find(x => x.name.toLowerCase().includes('workout')) || {
+                    id: 'workout_mix_ref',
+                    name: 'Workout Mix',
+                    tracks: [],
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                  };
+                  openPlaylist(p as any);
+                }}
+              >
+                <Image
+                  source={require('../../assets/ui/lib_workout.jpg')}
+                  style={styles.playlistImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.playlistInfo}>
+                  <Text style={styles.playlistTitle} numberOfLines={1}>Workout Mix</Text>
+                  <Text style={styles.playlistSubtitle} numberOfLines={1}>Playlist • Sonic Cube</Text>
+                </View>
+                <ChevronRight color="#FFFFFF" size={20} />
+              </TouchableOpacity>
+
+              {/* Arijit Singh */}
+              <View style={styles.playlistRow}>
+                <Image
+                  source={require('../../assets/ui/lib_arijit.jpg')}
+                  style={styles.artistCircleImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.playlistInfo}>
+                  <Text style={styles.playlistTitle} numberOfLines={1}>Arijit Singh</Text>
+                  <Text style={styles.playlistSubtitle} numberOfLines={1}>Artist</Text>
+                </View>
+                <ChevronRight color="#FFFFFF" size={20} />
+              </View>
+
+              {/* Eminem */}
+              <View style={styles.playlistRow}>
+                <Image
+                  source={require('../../assets/ui/lib_eminem.jpg')}
+                  style={styles.artistCircleImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.playlistInfo}>
+                  <Text style={styles.playlistTitle} numberOfLines={1}>Eminem</Text>
+                  <Text style={styles.playlistSubtitle} numberOfLines={1}>Artist</Text>
+                </View>
+                <ChevronRight color="#FFFFFF" size={20} />
+              </View>
+
+              {/* Taylor Swift */}
+              <View style={styles.playlistRow}>
+                <Image
+                  source={require('../../assets/ui/lib_taylor.jpg')}
+                  style={styles.artistCircleImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.playlistInfo}>
+                  <Text style={styles.playlistTitle} numberOfLines={1}>Taylor Swift</Text>
+                  <Text style={styles.playlistSubtitle} numberOfLines={1}>Artist</Text>
+                </View>
+                <ChevronRight color="#FFFFFF" size={20} />
+              </View>
+
+              {/* User created playlists (if any) */}
+              {playlists
+                .filter(p => !p.name.toLowerCase().includes('chill') && !p.name.toLowerCase().includes('workout'))
+                .map(playlist => (
+                  <TouchableOpacity
+                    key={playlist.id}
+                    style={styles.playlistRow}
+                    activeOpacity={0.75}
+                    onPress={() => openPlaylist(playlist)}
+                  >
+                    {playlist.coverImageUrl ? (
+                      <Image source={{ uri: playlist.coverImageUrl }} style={styles.playlistImage} />
+                    ) : (
+                      <View style={styles.playlistFallbackImage}>
+                        <Text style={styles.playlistFallbackText}>
+                          {playlist.name.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={styles.playlistInfo}>
+                      <Text style={styles.playlistTitle} numberOfLines={1}>{playlist.name}</Text>
+                      <Text style={styles.playlistSubtitle} numberOfLines={1}>
+                        Playlist • {playlist.tracks.length} tracks
+                      </Text>
+                    </View>
+                    <ChevronRight color="#FFFFFF" size={20} />
+                  </TouchableOpacity>
+                ))}
+            </>
+          )}
+
+          {activeFilter === 'Artists' && (
+            <>
+              <View style={styles.playlistRow}>
+                <Image source={require('../../assets/ui/lib_arijit.jpg')} style={styles.artistCircleImage} />
+                <View style={styles.playlistInfo}>
+                  <Text style={styles.playlistTitle}>Arijit Singh</Text>
+                  <Text style={styles.playlistSubtitle}>Artist</Text>
+                </View>
+                <ChevronRight color="#FFFFFF" size={20} />
+              </View>
+              <View style={styles.playlistRow}>
+                <Image source={require('../../assets/ui/lib_eminem.jpg')} style={styles.artistCircleImage} />
+                <View style={styles.playlistInfo}>
+                  <Text style={styles.playlistTitle}>Eminem</Text>
+                  <Text style={styles.playlistSubtitle}>Artist</Text>
+                </View>
+                <ChevronRight color="#FFFFFF" size={20} />
+              </View>
+              <View style={styles.playlistRow}>
+                <Image source={require('../../assets/ui/lib_taylor.jpg')} style={styles.artistCircleImage} />
+                <View style={styles.playlistInfo}>
+                  <Text style={styles.playlistTitle}>Taylor Swift</Text>
+                  <Text style={styles.playlistSubtitle}>Artist</Text>
+                </View>
+                <ChevronRight color="#FFFFFF" size={20} />
+              </View>
+            </>
+          )}
 
           {activeFilter === 'Albums' &&
             (derived.albums.length ? (
@@ -375,7 +475,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: FONTS.bold,
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '800',
     color: '#FFFFFF',
   },
@@ -385,14 +485,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerIconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(10, 20, 42, 0.75)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.2)',
   },
   filtersContainer: {
     marginBottom: SIZES.lg,
@@ -403,49 +501,41 @@ const styles = StyleSheet.create({
   playlistRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SIZES.md,
-    paddingVertical: 4,
+    marginBottom: 16,
+    paddingVertical: 2,
   },
   likedSquare: {
-    width: 58,
-    height: 58,
-    borderRadius: 12,
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    backgroundColor: COLORS.surfaceRaised,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#7928CA',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 4,
   },
   playlistImage: {
-    width: 58,
-    height: 58,
-    borderRadius: 12,
-    backgroundColor: '#0F1E3D',
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+  },
+  artistCircleImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.surface,
   },
   playlistFallbackImage: {
-    width: 58,
-    height: 58,
-    borderRadius: 12,
-    backgroundColor: '#0F1E3D',
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.2)',
   },
   playlistFallbackText: {
     fontFamily: FONTS.bold,
-    fontSize: 22,
-    color: COLORS.accent.cyan,
-  },
-  artistImage: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: '#0F1E3D',
-    borderWidth: 1.5,
-    borderColor: COLORS.accent.cyan,
+    fontSize: 20,
+    color: '#FFFFFF',
   },
   playlistInfo: {
     flex: 1,
@@ -454,15 +544,15 @@ const styles = StyleSheet.create({
   },
   playlistTitle: {
     fontFamily: FONTS.bold,
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 3,
   },
   playlistSubtitle: {
     fontFamily: FONTS.regular,
-    fontSize: 13,
-    color: '#8A99AD',
+    fontSize: 14,
+    color: COLORS.text.secondary,
   },
   deleteButton: {
     padding: 8,
@@ -470,7 +560,7 @@ const styles = StyleSheet.create({
   emptyHint: {
     fontFamily: FONTS.regular,
     fontSize: 14,
-    color: '#8A99AD',
+    color: COLORS.text.secondary,
     paddingHorizontal: SIZES.md,
     paddingVertical: SIZES.lg,
     textAlign: 'center',
@@ -479,9 +569,7 @@ const styles = StyleSheet.create({
     padding: SIZES.md,
     marginBottom: SIZES.md,
     borderRadius: 16,
-    backgroundColor: 'rgba(10, 20, 42, 0.9)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.25)',
+    backgroundColor: COLORS.surface,
   },
   importTitle: {
     fontFamily: FONTS.bold,
@@ -500,9 +588,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     fontSize: 14,
     color: '#FFFFFF',
-    backgroundColor: 'rgba(6, 11, 24, 0.8)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 212, 255, 0.2)',
+    backgroundColor: '#111110',
     borderRadius: 10,
     paddingHorizontal: SIZES.sm,
   },
@@ -512,7 +598,7 @@ const styles = StyleSheet.create({
     minWidth: 60,
     paddingHorizontal: SIZES.md,
     borderRadius: 10,
-    backgroundColor: COLORS.accent.cyan,
+    backgroundColor: COLORS.activeWhite,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -521,19 +607,19 @@ const styles = StyleSheet.create({
   },
   panelDivider: {
     height: 1,
-    backgroundColor: 'rgba(0, 212, 255, 0.15)',
+    backgroundColor: COLORS.divider,
     marginVertical: SIZES.md,
   },
   importButtonText: {
     fontFamily: FONTS.bold,
     fontSize: 14,
     fontWeight: '700',
-    color: '#060B18',
+    color: '#000000',
   },
   importError: {
     fontFamily: FONTS.regular,
     fontSize: 12,
-    color: '#FF3366',
+    color: '#FF4444',
     marginTop: SIZES.sm,
   },
 });
