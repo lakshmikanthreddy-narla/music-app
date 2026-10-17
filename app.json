@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "NOTE",
-    "slug": "NOTE",
+    "name": "SONIQ",
+    "slug": "SONIQ",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -52,6 +52,6 @@
       "./plugins/withAndroidAbis",
       "./plugins/withReleaseSigning"
     ],
-    "backgroundColor": "#050707"
+    "backgroundColor": "#060B18"
   }
 }

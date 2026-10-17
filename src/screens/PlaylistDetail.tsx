@@ -6,9 +6,11 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Play, Shuffle, ListPlus } from 'lucide-react-native';
+import { ChevronLeft, Play, Pause, Heart, Download, MoreHorizontal, Share2 } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
 import { TrackRow } from '../components/lists/TrackRow';
@@ -19,23 +21,18 @@ import { Track } from '../core/types';
 import { usePlayer } from '../hooks/usePlayer';
 import { useLibrary } from '../hooks/useLibrary';
 
+const { width } = Dimensions.get('window');
+
 type PlaylistRouteParams = { playlistId: string };
 type PlaylistRoute = RouteProp<{ Playlist: PlaylistRouteParams }, 'Playlist'>;
 
-/**
- * A playlist on its own page.
- *
- * Everything here operates strictly on this playlist's own tracks: pressing
- * Play queues exactly these, in this order, with this playlist as the context
- * label -- never the global recents list.
- */
 export default function PlaylistDetailScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute<PlaylistRoute>();
   const { playlistId } = route.params;
 
-  const { playlists, likedPlaylist } = useLibrary();
+  const { playlists, likedPlaylist, isLiked, toggleLike } = useLibrary();
   const {
     playTrack,
     addToQueue,
@@ -47,7 +44,6 @@ export default function PlaylistDetailScreen() {
     toggleShuffle,
   } = usePlayer();
 
-  /** Track whose "add to playlist" sheet is open. */
   const [addingTrack, setAddingTrack] = useState<Track | null>(null);
 
   const playlist = useMemo(
@@ -56,26 +52,18 @@ export default function PlaylistDetailScreen() {
   );
 
   const tracks = playlist?.tracks ?? [];
+  const isPlayingThisPlaylist = currentTrack && tracks.some((t) => t.id === currentTrack.id) && isPlaying;
 
   const playFromStart = useCallback(() => {
     if (!tracks.length || !playlist) return;
-    if (shuffle) toggleShuffle(); // Play means in order.
+    if (isPlayingThisPlaylist) {
+      togglePlayPause();
+      return;
+    }
+    if (shuffle) toggleShuffle();
     playTrack(tracks[0], { tracks, label: playlist.name });
-  }, [tracks, playlist, playTrack, shuffle, toggleShuffle]);
+  }, [tracks, playlist, playTrack, shuffle, toggleShuffle, isPlayingThisPlaylist, togglePlayPause]);
 
-  const playShuffled = useCallback(() => {
-    if (!tracks.length || !playlist) return;
-
-    const start = tracks[Math.floor(Math.random() * tracks.length)];
-    playTrack(start, { tracks, label: playlist.name });
-    if (!shuffle) toggleShuffle();
-  }, [tracks, playlist, playTrack, shuffle, toggleShuffle]);
-
-  const queueAll = useCallback(() => {
-    if (tracks.length) addToQueue(tracks);
-  }, [tracks, addToQueue]);
-
-  /** One stable callback for every row in this playlist. */
   const onTrackPress = useCallback(
     (track: Track) => {
       if (!playlist) return;
@@ -85,13 +73,18 @@ export default function PlaylistDetailScreen() {
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: Track }) => (
-      <TrackRow
-        track={item}
-        onPress={onTrackPress}
-        onMorePress={setAddingTrack}
-        isPlaying={currentTrack?.id === item.id && isPlaying}
-      />
+    ({ item, index }: { item: Track; index: number }) => (
+      <View style={styles.numberedTrackRow}>
+        <Text style={styles.trackIndex}>{index + 1}</Text>
+        <View style={styles.trackRowFlex}>
+          <TrackRow
+            track={item}
+            onPress={onTrackPress}
+            onMorePress={setAddingTrack}
+            isPlaying={currentTrack?.id === item.id && isPlaying}
+          />
+        </View>
+      </View>
     ),
     [onTrackPress, currentTrack?.id, isPlaying]
   );
@@ -100,7 +93,7 @@ export default function PlaylistDetailScreen() {
     return (
       <View style={[styles.container, { paddingTop: insets.top + SIZES.lg }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ChevronLeft color={COLORS.text.primary} size={28} />
+          <ChevronLeft color="#FFFFFF" size={26} />
         </TouchableOpacity>
         <GlassCard intensity={20} style={styles.emptyCard}>
           <Text style={styles.emptyText}>This playlist is no longer available.</Text>
@@ -111,48 +104,81 @@ export default function PlaylistDetailScreen() {
 
   const header = (
     <View style={styles.headerBlock}>
+      {/* Top action row */}
+      <View style={styles.topNavRow}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.circleNavButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <ChevronLeft color="#FFFFFF" size={24} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.circleNavButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <MoreHorizontal color="#FFFFFF" size={22} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Album cover artwork */}
       <View style={styles.artworkWrap}>
         {playlist.coverImageUrl ? (
           <Image source={{ uri: playlist.coverImageUrl }} style={styles.artwork} />
         ) : (
-          <View style={[styles.artwork, styles.artworkFallback]} />
+          <View style={[styles.artwork, styles.artworkFallback]}>
+            <Image
+              source={require('../../assets/soniq-logo.png')}
+              style={styles.fallbackLogo}
+              resizeMode="contain"
+            />
+          </View>
         )}
       </View>
 
+      {/* Title & info matching PDF Page 5 */}
       <Text style={styles.title} numberOfLines={2}>{playlist.name}</Text>
-      <Text style={styles.meta} numberOfLines={1}>
-        {playlist.creator ? `${playlist.creator} • ` : ''}
-        {tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}
+      <Text style={styles.description}>
+        {playlist.description || 'Relax and unwind with the best tracks on SONIQ.'}
+      </Text>
+      <Text style={styles.meta}>
+        SONIQ • {tracks.length} {tracks.length === 1 ? 'song' : 'songs'}
       </Text>
 
-      <View style={styles.actions}>
+      {/* Actions Row: Heart, Download, Share, and large Cyan Play button */}
+      <View style={styles.actionsRow}>
+        <View style={styles.leftActions}>
+          <TouchableOpacity
+            style={styles.actionIconBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Heart color={COLORS.accent.cyan} size={22} fill={COLORS.accent.cyan} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionIconBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Download color="#8A99AD" size={22} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionIconBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Share2 color="#8A99AD" size={22} />
+          </TouchableOpacity>
+        </View>
+
         <TouchableOpacity
-          style={[styles.primaryAction, !tracks.length && styles.actionDisabled]}
+          style={[styles.bigCyanPlayBtn, !tracks.length && styles.actionDisabled]}
           activeOpacity={0.85}
           onPress={playFromStart}
           disabled={!tracks.length}
         >
-          <Play color={COLORS.background} size={20} fill={COLORS.background} />
-          <Text style={styles.primaryActionText}>Play</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.secondaryAction, !tracks.length && styles.actionDisabled]}
-          activeOpacity={0.85}
-          onPress={playShuffled}
-          disabled={!tracks.length}
-        >
-          <Shuffle color={COLORS.text.primary} size={20} />
-          <Text style={styles.secondaryActionText}>Shuffle</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.iconAction, !tracks.length && styles.actionDisabled]}
-          activeOpacity={0.85}
-          onPress={queueAll}
-          disabled={!tracks.length}
-        >
-          <ListPlus color={COLORS.text.primary} size={20} />
+          {isPlayingThisPlaylist ? (
+            <Pause color="#060B18" size={26} fill="#060B18" />
+          ) : (
+            <Play color="#060B18" size={26} fill="#060B18" style={{ marginLeft: 3 }} />
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -160,6 +186,12 @@ export default function PlaylistDetailScreen() {
 
   return (
     <View style={styles.container}>
+      <LinearGradient
+        colors={['#0E1B38', '#060B18', '#03060C']}
+        locations={[0, 0.45, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+
       <FlatList
         data={tracks}
         keyExtractor={(item) => item.id}
@@ -169,13 +201,13 @@ export default function PlaylistDetailScreen() {
           <GlassCard intensity={20} style={styles.emptyCard}>
             <Text style={styles.emptyText}>
               {playlist.id === 'liked'
-                ? 'Tap the heart on a track to save it here.'
+                ? 'Tap the heart on any song to save it here.'
                 : 'This playlist is empty.'}
             </Text>
           </GlassCard>
         }
         contentContainerStyle={{
-          paddingTop: insets.top + SIZES.xxl,
+          paddingTop: insets.top + SIZES.sm,
           paddingBottom: SIZES.bottomInset,
         }}
         showsVerticalScrollIndicator={false}
@@ -183,15 +215,6 @@ export default function PlaylistDetailScreen() {
         windowSize={9}
         removeClippedSubviews
       />
-
-      {/* Floating back control, above the list. */}
-      <TouchableOpacity
-        onPress={() => navigation.goBack()}
-        style={[styles.backButton, { top: insets.top + SIZES.sm }]}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-      >
-        <ChevronLeft color={COLORS.text.primary} size={28} />
-      </TouchableOpacity>
 
       <AddToPlaylistSheet track={addingTrack} onClose={() => setAddingTrack(null)} />
 
@@ -213,99 +236,120 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  backButton: {
-    position: 'absolute',
-    left: SIZES.md,
-    zIndex: 30,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.surfaceRaised,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-  },
   headerBlock: {
     paddingHorizontal: SIZES.md,
-    paddingBottom: SIZES.lg,
+    paddingBottom: SIZES.md,
+  },
+  topNavRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SIZES.md,
+  },
+  circleNavButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(13, 27, 54, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 212, 255, 0.2)',
   },
   artworkWrap: {
     alignItems: 'center',
-    marginBottom: SIZES.lg,
+    marginVertical: SIZES.sm,
   },
   artwork: {
-    width: 200,
-    height: 200,
-    borderRadius: SIZES.radius.md,
-    backgroundColor: COLORS.surfaceLight,
+    width: width * 0.58,
+    height: width * 0.58,
+    borderRadius: 18,
+    backgroundColor: '#0F1E3D',
+    shadowColor: COLORS.accent.cyan,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 8,
   },
   artworkFallback: {
-    backgroundColor: COLORS.surfaceRaised,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fallbackLogo: {
+    width: '60%',
+    height: '60%',
   },
   title: {
     fontFamily: FONTS.bold,
-    fontSize: 28,
-    color: COLORS.text.primary,
-    marginBottom: SIZES.xs,
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginTop: SIZES.md,
+  },
+  description: {
+    fontFamily: FONTS.regular,
+    fontSize: 13,
+    color: '#8A99AD',
+    marginTop: 4,
+    lineHeight: 18,
   },
   meta: {
-    fontFamily: FONTS.regular,
-    fontSize: 14,
-    color: COLORS.text.secondary,
-    marginBottom: SIZES.lg,
-  },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SIZES.sm,
-  },
-  primaryAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SIZES.sm,
-    backgroundColor: COLORS.text.primary,
-    paddingVertical: SIZES.sm + 4,
-    paddingHorizontal: SIZES.lg,
-    borderRadius: SIZES.radius.pill,
-  },
-  primaryActionText: {
     fontFamily: FONTS.medium,
-    fontSize: 15,
-    color: COLORS.background,
+    fontSize: 12,
+    color: COLORS.accent.cyan,
+    marginTop: 6,
   },
-  secondaryAction: {
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: SIZES.md,
+    paddingTop: SIZES.xs,
+  },
+  leftActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SIZES.sm,
-    backgroundColor: COLORS.surfaceRaised,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    paddingVertical: SIZES.sm + 4,
-    paddingHorizontal: SIZES.md,
-    borderRadius: SIZES.radius.pill,
+    gap: 16,
   },
-  secondaryActionText: {
-    fontFamily: FONTS.medium,
-    fontSize: 15,
-    color: COLORS.text.primary,
+  actionIconBtn: {
+    padding: 6,
   },
-  iconAction: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
+  bigCyanPlayBtn: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: COLORS.accent.cyan,
     justifyContent: 'center',
-    borderRadius: SIZES.radius.pill,
-    backgroundColor: COLORS.surfaceRaised,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
+    alignItems: 'center',
+    shadowColor: COLORS.accent.cyan,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.7,
+    shadowRadius: 14,
+    elevation: 8,
   },
   actionDisabled: {
     opacity: 0.4,
   },
+  numberedTrackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: SIZES.md,
+  },
+  trackIndex: {
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#8A99AD',
+    width: 22,
+    textAlign: 'center',
+  },
+  trackRowFlex: {
+    flex: 1,
+  },
   emptyCard: {
     marginHorizontal: SIZES.md,
     padding: SIZES.lg,
+    borderRadius: 14,
   },
   emptyText: {
     fontFamily: FONTS.regular,

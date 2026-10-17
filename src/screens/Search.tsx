@@ -8,9 +8,11 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Keyboard,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search as SearchIcon, Mic, X } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
 import { Pill } from '../components/common/Pill';
 import { GlassCard } from '../components/common/GlassCard';
@@ -26,7 +28,25 @@ import { MusicService } from '../services/MusicService';
 import { useNavigation } from '@react-navigation/native';
 import { startVoiceSearch } from '../../modules/note-native';
 
+const { width } = Dimensions.get('window');
+
 const FILTERS: SearchFilter[] = ['All', 'Songs', 'Artists', 'Albums', 'Playlists'];
+
+// Genre cards gradient definitions matching PDF Page 4
+const CATEGORY_GRADIENTS: Record<string, readonly [string, string]> = {
+  c1: ['#0A4D68', '#051923'], // Top Charts
+  c2: ['#7928CA', '#2B0938'], // New Releases
+  c3: ['#1A365D', '#0B192C'], // Mood
+  c4: ['#00796B', '#004D40'], // Party
+  c5: ['#4A148C', '#1A0033'], // Chill
+  c6: ['#1B5E20', '#0A290E'], // Workout
+  c7: ['#C2185B', '#4A0E2E'], // Pop
+  c8: ['#B45309', '#3D1C02'], // Hip Hop
+  c9: ['#880E4F', '#2E0318'], // Rock
+  c10: ['#C2410C', '#431407'], // Indie
+  c11: ['#00B4D8', '#003554'], // EDM
+  c12: ['#4A0E4E', '#190019'], // Classical
+};
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
@@ -67,10 +87,8 @@ export default function SearchScreen() {
 
   const isBrowsing = query.trim().length === 0;
 
-  /** Playing a search result queues the whole result list behind it. */
   const onPlayTrack = useCallback(
     (track: Track) => {
-      // The result has been chosen; the user is done typing.
       Keyboard.dismiss();
       playTrack(track, {
         tracks: results.tracks,
@@ -80,7 +98,6 @@ export default function SearchScreen() {
     [playTrack, results.tracks, results.query]
   );
 
-  /** Tapping an album/playlist expands it and plays it as a queue. */
   const onOpenCollection = useCallback(
     async (
       id: string,
@@ -90,17 +107,17 @@ export default function SearchScreen() {
     ) => {
       Keyboard.dismiss();
       setExpandingId(id);
-    try {
-      const page =
-        kind === 'album'
-          ? await MusicService.getAlbum(browseId)
-          : await MusicService.getPlaylist(browseId);
+      try {
+        const page =
+          kind === 'album'
+            ? await MusicService.getAlbum(browseId)
+            : await MusicService.getPlaylist(browseId);
 
-      if (page.tracks.length) {
-        playTrack(page.tracks[0], { tracks: page.tracks, label: name });
-      }
-    } catch {
-      // The inline error row below already covers failed lookups.
+        if (page.tracks.length) {
+          playTrack(page.tracks[0], { tracks: page.tracks, label: name });
+        }
+      } catch {
+        // Silent
       } finally {
         setExpandingId(null);
       }
@@ -112,11 +129,13 @@ export default function SearchScreen() {
     async (id: string, browseId: string, name: string) => {
       Keyboard.dismiss();
       setExpandingId(id);
-    try {
-      const tracks = await MusicService.getArtistTracks(browseId);
-      if (tracks.length) playTrack(tracks[0], { tracks, label: name });
+      try {
+        const page = await MusicService.getArtist(browseId);
+        if (page.tracks.length) {
+          playTrack(page.tracks[0], { tracks: page.tracks, label: name });
+        }
       } catch {
-        /* handled by the error row */
+        // Silent
       } finally {
         setExpandingId(null);
       }
@@ -124,8 +143,6 @@ export default function SearchScreen() {
     [playTrack]
   );
 
-  // Synthetic Track objects for non-track results. Memoized because a new
-  // object literal per render would defeat TrackRow’s memoization.
   const artistRows = useMemo(
     () =>
       results.artists.map((artist) => ({
@@ -184,26 +201,33 @@ export default function SearchScreen() {
     [onOpenCollection]
   );
 
-  /** Track whose "add to playlist" sheet is open. */
   const [addingTrack, setAddingTrack] = useState<Track | null>(null);
 
   return (
     <View style={styles.container}>
+      <LinearGradient
+        colors={['#0A1326', '#060B18', '#040710']}
+        locations={[0, 0.4, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + SIZES.lg, paddingBottom: SIZES.bottomInset },
+          { paddingTop: insets.top + SIZES.md, paddingBottom: SIZES.bottomInset },
         ]}
+        showsVerticalScrollIndicator={false}
       >
         <Text style={styles.headerTitle}>Search</Text>
 
+        {/* Search Input Bar with Voice Mic */}
         <View style={styles.searchContainer}>
           <SearchIcon color={COLORS.text.secondary} size={20} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Songs, artists, albums..."
-            placeholderTextColor={COLORS.text.secondary}
+            placeholder="Artists, songs, albums, playlists..."
+            placeholderTextColor="#8A99AD"
             value={query}
             onChangeText={setQuery}
             onSubmitEditing={() => searchNow(query)}
@@ -214,49 +238,63 @@ export default function SearchScreen() {
             onPress={() => (query ? clear() : handleVoiceSearch())}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             disabled={isListening}
+            style={styles.micButton}
           >
             {query ? (
               <X color={COLORS.text.secondary} size={20} />
             ) : isListening ? (
-              <ActivityIndicator size="small" color={COLORS.accent.green} />
+              <ActivityIndicator size="small" color={COLORS.accent.cyan} />
             ) : (
-              <Mic color={COLORS.accent.green} size={20} />
+              <Mic color={COLORS.accent.cyan} size={20} />
             )}
           </TouchableOpacity>
         </View>
 
-        <View style={styles.filtersContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {FILTERS.map((f) => (
-              <Pill
-                key={f}
-                label={f}
-                isActive={filter === f}
-                onPress={() => setFilter(f)}
-              />
-            ))}
-          </ScrollView>
-        </View>
+        {query.trim().length > 0 && (
+          <View style={styles.filtersContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {FILTERS.map((f) => (
+                <Pill
+                  key={f}
+                  label={f}
+                  isActive={filter === f}
+                  onPress={() => setFilter(f)}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {isBrowsing ? (
           <>
-            <Text style={styles.sectionTitle}>Browse NØTE</Text>
+            <Text style={styles.sectionTitle}>Browse All</Text>
 
             <View style={styles.categoriesGrid}>
-              {BROWSE_CATEGORIES.map((category) => (
-                <TouchableOpacity
-                  key={category.id}
-                  style={styles.categoryCardWrapper}
-                  activeOpacity={0.8}
-                  onPress={() => searchNow(category.query)}
-                >
-                  <GlassCard intensity={20} style={[styles.categoryCard]}>
-                    {/* A subtle colored glow using a positioned view instead of gradient for simplicity */}
-                    <View style={[styles.categoryGlow, { backgroundColor: category.color }]} />
-                    <Text style={styles.categoryName}>{category.name}</Text>
-                  </GlassCard>
-                </TouchableOpacity>
-              ))}
+              {BROWSE_CATEGORIES.map((category) => {
+                const gradient = CATEGORY_GRADIENTS[category.id] || ['#0D1B36', '#060B18'];
+                return (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={styles.categoryCardWrapper}
+                    activeOpacity={0.82}
+                    onPress={() => {
+                      setQuery(category.name);
+                      searchNow(category.query);
+                    }}
+                  >
+                    <View style={styles.categoryCard}>
+                      <LinearGradient
+                        colors={gradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={StyleSheet.absoluteFill}
+                      />
+                      <View style={styles.categoryGlowCircle} />
+                      <Text style={styles.categoryName}>{category.name}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </>
         ) : (
@@ -272,14 +310,14 @@ export default function SearchScreen() {
 
             {isSearching && !hasResults && (
               <View style={styles.stateCenter}>
-                <ActivityIndicator color={COLORS.text.secondary} />
+                <ActivityIndicator color={COLORS.accent.cyan} size="large" />
               </View>
             )}
 
             {!isSearching && !error && !hasResults && (
               <GlassCard intensity={20} style={styles.stateCard}>
                 <Text style={styles.stateText}>No results for "{query.trim()}"</Text>
-                <Text style={styles.stateHint}>Try a different spelling or filter</Text>
+                <Text style={styles.stateHint}>Try a different spelling or genre</Text>
               </GlassCard>
             )}
 
@@ -376,37 +414,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIZES.md,
   },
   headerTitle: {
-    fontFamily: FONTS.medium,
-    fontSize: 28,
-    color: COLORS.text.primary,
+    fontFamily: FONTS.bold,
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#FFFFFF',
     marginBottom: SIZES.md,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.glass,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    borderRadius: SIZES.radius.md,
+    backgroundColor: 'rgba(10, 20, 42, 0.85)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(0, 212, 255, 0.28)',
+    borderRadius: 28,
     paddingHorizontal: SIZES.md,
-    height: 56,
+    height: 52,
     marginBottom: SIZES.lg,
+    shadowColor: COLORS.accent.cyan,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   searchInput: {
     flex: 1,
     height: '100%',
     fontFamily: FONTS.regular,
-    fontSize: 16,
-    color: COLORS.text.primary,
+    fontSize: 15,
+    color: '#FFFFFF',
     marginLeft: SIZES.sm,
   },
+  micButton: {
+    padding: 6,
+  },
   filtersContainer: {
-    marginBottom: SIZES.xl,
+    marginBottom: SIZES.lg,
   },
   sectionTitle: {
-    fontFamily: FONTS.medium,
+    fontFamily: FONTS.bold,
     fontSize: 18,
-    color: COLORS.text.primary,
+    fontWeight: '700',
+    color: '#FFFFFF',
     marginBottom: SIZES.md,
   },
   categoriesGrid: {
@@ -416,29 +463,31 @@ const styles = StyleSheet.create({
   },
   categoryCardWrapper: {
     width: '48%',
-    marginBottom: SIZES.md,
+    marginBottom: 12,
   },
   categoryCard: {
-    height: 100,
-    padding: SIZES.md,
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
+    height: 92,
+    borderRadius: 14,
+    padding: 14,
     overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
-  categoryGlow: {
+  categoryGlowCircle: {
     position: 'absolute',
-    right: -20,
-    bottom: -20,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    opacity: 0.3,
-    // Add a blur filter if running on web, otherwise rely on opacity
+    right: -15,
+    bottom: -15,
+    width: 65,
+    height: 65,
+    borderRadius: 32.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   categoryName: {
-    fontFamily: FONTS.medium,
+    fontFamily: FONTS.bold,
     fontSize: 16,
-    color: COLORS.text.primary,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   resultsList: {
     marginBottom: SIZES.lg,
@@ -446,6 +495,7 @@ const styles = StyleSheet.create({
   stateCard: {
     padding: SIZES.md,
     marginBottom: SIZES.lg,
+    borderRadius: 14,
   },
   stateText: {
     fontFamily: FONTS.medium,
@@ -459,7 +509,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   stateCenter: {
-    paddingVertical: SIZES.xl,
+    paddingVertical: SIZES.xxl,
     alignItems: 'center',
   },
 });

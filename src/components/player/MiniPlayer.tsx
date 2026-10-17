@@ -85,11 +85,11 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color={COLORS.text.primary} />
+                <ActivityIndicator size="small" color={COLORS.accent.cyan} />
               ) : isPlaying ? (
-                <Pause color={COLORS.text.primary} size={24} fill={COLORS.text.primary} />
+                <Pause color={COLORS.accent.cyan} size={24} fill={COLORS.accent.cyan} />
               ) : (
-                <Play color={COLORS.text.primary} size={24} fill={COLORS.text.primary} />
+                <Play color={COLORS.accent.cyan} size={24} fill={COLORS.accent.cyan} />
               )}
             </TouchableOpacity>
           </View>

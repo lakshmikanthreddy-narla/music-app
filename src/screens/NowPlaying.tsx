@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,34 +10,41 @@ import {
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronDown, Heart, Play, Pause, SkipBack, SkipForward, Repeat, Repeat1, Shuffle, RotateCcw, RotateCw, MonitorSpeaker, Share, ListMusic, ListPlus, X } from 'lucide-react-native';
-import { BlurView } from 'expo-blur';
+import {
+  ChevronDown,
+  Heart,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Repeat,
+  Repeat1,
+  Shuffle,
+  MonitorSpeaker,
+  ListMusic,
+  ListPlus,
+  X,
+  FileText,
+} from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
 import { PlaybackSourceSheet } from '../components/player/PlaybackSourceSheet';
 import { SeekBar } from '../components/player/SeekBar';
 import { AddToPlaylistSheet } from '../components/lists/AddToPlaylistSheet';
 import { LyricsCard } from '../components/player/LyricsCard';
+import { CdTurntable } from '../components/player/CdTurntable';
 import { Track } from '../core/types';
 import { usePlayer } from '../hooks/usePlayer';
 import { useLibrary } from '../hooks/useLibrary';
 import { useNavigation } from '@react-navigation/native';
 
-const { width, height } = Dimensions.get('window');
-const artworkSize = Math.min(width - SIZES.lg * 2, height * 0.38, 330);
-
-/** Seconds -> m:ss, for the progress labels. */
-const formatTime = (seconds: number): string => {
-  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
-  const total = Math.floor(seconds);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-};
+const { width } = Dimensions.get('window');
 
 export default function NowPlayingScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const scrollViewRef = useRef<ScrollView>(null);
+
   const {
     currentTrack,
     isPlaying,
@@ -47,7 +54,6 @@ export default function NowPlayingScreen() {
     error,
     retry,
     seekTo,
-    seekBy,
     next,
     previous,
     shuffle,
@@ -58,13 +64,12 @@ export default function NowPlayingScreen() {
     queueContext,
     jumpTo,
     removeFromQueue,
-    canPlayCurrent,
   } = usePlayer();
 
   const { isLiked, toggleLike } = useLibrary();
   const [showQueue, setShowQueue] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
   const [showSource, setShowSource] = useState(false);
-  /** Track whose "add to playlist" sheet is open. */
   const [addingTrack, setAddingTrack] = useState<Track | null>(null);
 
   if (!currentTrack) return null;
@@ -72,6 +77,14 @@ export default function NowPlayingScreen() {
   const liked = isLiked(currentTrack.id);
   const busy = isLoading || isBuffering;
 
+  const toggleLyricsView = () => {
+    setShowLyrics(!showLyrics);
+    if (!showLyrics) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -79,226 +92,220 @@ export default function NowPlayingScreen() {
       <Image
         source={{ uri: currentTrack.albumImageUrl }}
         style={StyleSheet.absoluteFill}
-        blurRadius={100}
+        blurRadius={80}
       />
       <LinearGradient
-        colors={['rgba(5, 7, 7, 0.4)', COLORS.background]}
-        locations={[0, 0.7]}
+        colors={['rgba(6, 11, 24, 0.65)', '#060B18', '#03060C']}
+        locations={[0, 0.45, 1]}
         style={StyleSheet.absoluteFill}
       />
 
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={[
           styles.contentContainer,
-          { paddingTop: insets.top, paddingBottom: insets.bottom + SIZES.md }
+          { paddingTop: insets.top + SIZES.xs, paddingBottom: insets.bottom + SIZES.lg },
         ]}
         showsVerticalScrollIndicator={false}
-        bounces={false}
       >
-
-        {/* Header */}
+        {/* Top Header */}
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={styles.headerIcon}
+            style={styles.headerIconBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <ChevronDown color={COLORS.text.primary} size={28} />
+            <ChevronDown color="#FFFFFF" size={26} />
           </TouchableOpacity>
+
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerSub}>PLAYING FROM</Text>
             <Text style={styles.headerTitle} numberOfLines={1}>
-              {queueContext || 'NØTE'}
+              {queueContext || 'SONIQ'}
             </Text>
           </View>
-          {/* Up Next already has its own toggle in the bottom row, so this
-              opens "add to playlist" rather than duplicating it. */}
+
           <TouchableOpacity
-            style={styles.headerIcon}
+            style={styles.headerIconBtn}
             onPress={() => setAddingTrack(currentTrack)}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <ListPlus color={COLORS.text.primary} size={24} />
+            <ListPlus color="#FFFFFF" size={22} />
           </TouchableOpacity>
         </View>
 
-        {/* Artwork */}
-        <View style={styles.artworkContainer}>
-          <Image source={{ uri: currentTrack.albumImageUrl }} style={styles.artwork} />
+        {/* CD-Style Turntable Centerpiece matching PDF Page 6 */}
+        <CdTurntable
+          albumImageUrl={currentTrack.albumImageUrl}
+          isPlaying={isPlaying}
+          isLiked={liked}
+          onToggleLike={() => toggleLike(currentTrack)}
+        />
+
+        {/* Track Title & Artist */}
+        <View style={styles.trackInfo}>
+          <Text style={styles.trackTitle} numberOfLines={1}>
+            {currentTrack.title}
+          </Text>
+          <Text style={styles.trackArtist} numberOfLines={1}>
+            {currentTrack.artist.name}
+          </Text>
         </View>
 
-        {/* Track Info */}
-        <View style={styles.infoContainer}>
-          <View style={styles.textInfo}>
-            <Text style={styles.trackTitle} numberOfLines={1}>{currentTrack.title}</Text>
-            <Text style={styles.trackArtist} numberOfLines={1}>{currentTrack.artist.name}</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => toggleLike(currentTrack)}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <Heart
-              color={liked ? COLORS.accent.green : COLORS.text.primary}
-              fill={liked ? COLORS.accent.green : 'transparent'}
-              size={28}
-            />
-          </TouchableOpacity>
+        {/* Linear Scrubber SeekBar */}
+        <View style={styles.seekContainer}>
+          <SeekBar onSeek={seekTo} />
         </View>
 
-        {/* Progress. SeekBar owns its own measurement, gesture handling and
-            position subscription, so this screen no longer re-renders on every
-            playback tick. */}
-        <SeekBar onSeek={seekTo} />
-
-        {/* Error state -- never leaves the player stuck */}
-        {error && (
-          <TouchableOpacity activeOpacity={0.8} onPress={retry} style={styles.errorBanner}>
-            <Text style={styles.errorText} numberOfLines={3}>{error}</Text>
-            <Text style={styles.errorHint}>Tap to retry</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Relative seek, mirroring the lock-screen +/-10s buttons. */}
-        <View style={styles.seekRow}>
-          <TouchableOpacity
-            style={styles.seekButton}
-            onPress={() => seekBy(-10)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <RotateCcw color={COLORS.text.secondary} size={22} />
-            <Text style={styles.seekLabel}>10</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.seekButton}
-            onPress={() => seekBy(10)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <RotateCw color={COLORS.text.secondary} size={22} />
-            <Text style={styles.seekLabel}>10</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Main Controls */}
-        <View style={styles.controlsContainer}>
+        {/* Playback Controls Row matching PDF Page 6 */}
+        <View style={styles.controlsRow}>
+          {/* Shuffle */}
           <TouchableOpacity
             onPress={toggleShuffle}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Shuffle color={shuffle ? COLORS.accent.green : COLORS.text.secondary} size={24} />
+            <Shuffle
+              color={shuffle ? COLORS.accent.cyan : '#6B7C96'}
+              size={22}
+              strokeWidth={shuffle ? 2.5 : 2}
+            />
           </TouchableOpacity>
+
+          {/* Previous Track */}
           <TouchableOpacity
             onPress={previous}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <SkipBack color={COLORS.text.primary} size={32} />
+            <SkipBack color="#FFFFFF" size={28} />
           </TouchableOpacity>
+
+          {/* Large Glowing Electric Cyan Play/Pause Button */}
           <TouchableOpacity
-            style={styles.playButton}
+            style={styles.cyanPlayButton}
             onPress={togglePlayPause}
             activeOpacity={0.85}
           >
             {busy ? (
-              <ActivityIndicator color={COLORS.background} />
+              <ActivityIndicator color="#060B18" size="small" />
             ) : isPlaying ? (
-              <Pause color={COLORS.background} size={32} fill={COLORS.background} />
+              <Pause color="#060B18" size={30} fill="#060B18" />
             ) : (
-              <Play color={COLORS.background} size={32} fill={COLORS.background} />
+              <Play color="#060B18" size={30} fill="#060B18" style={{ marginLeft: 3 }} />
             )}
           </TouchableOpacity>
+
+          {/* Next Track */}
           <TouchableOpacity
             onPress={next}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <SkipForward color={COLORS.text.primary} size={32} />
+            <SkipForward color="#FFFFFF" size={28} />
           </TouchableOpacity>
+
+          {/* Repeat */}
           <TouchableOpacity
             onPress={cycleRepeat}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
             {repeat === 'one' ? (
-              <Repeat1 color={COLORS.accent.green} size={24} />
+              <Repeat1 color={COLORS.accent.cyan} size={22} strokeWidth={2.5} />
             ) : (
               <Repeat
-                color={repeat === 'all' ? COLORS.accent.green : COLORS.text.secondary}
-                size={24}
+                color={repeat === 'all' ? COLORS.accent.cyan : '#6B7C96'}
+                size={22}
+                strokeWidth={repeat === 'all' ? 2.5 : 2}
               />
             )}
           </TouchableOpacity>
         </View>
 
-        {/* Bottom Actions */}
-        <View style={styles.bottomActions}>
+        {/* Bottom Actions Row: Audio Source, Lyrics Pill, Queue Toggle */}
+        <View style={styles.bottomActionsRow}>
           <TouchableOpacity
+            style={styles.bottomActionIcon}
             onPress={() => setShowSource(true)}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <MonitorSpeaker
-              color={canPlayCurrent ? COLORS.text.secondary : COLORS.accent.red}
-              size={24}
-            />
+            <MonitorSpeaker color="#8A99AD" size={22} />
           </TouchableOpacity>
-          <TouchableOpacity hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-            <Share color={COLORS.text.secondary} size={24} />
-          </TouchableOpacity>
+
+          {/* Lyrics Button with Neon Cyan Pill */}
           <TouchableOpacity
-            onPress={() => setShowQueue((v) => !v)}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={[styles.lyricsPill, showLyrics && styles.lyricsPillActive]}
+            onPress={toggleLyricsView}
+            activeOpacity={0.8}
           >
-            <ListMusic
-              color={showQueue ? COLORS.accent.green : COLORS.text.secondary}
-              size={24}
-            />
+            <Text style={[styles.lyricsPillText, showLyrics && styles.lyricsPillTextActive]}>
+              Lyrics
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.bottomActionIcon}
+            onPress={() => setShowQueue(!showQueue)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <ListMusic color={showQueue ? COLORS.accent.cyan : '#8A99AD'} size={22} />
           </TouchableOpacity>
         </View>
 
-        {/* Live Synchronized Lyrics */}
-        <LyricsCard track={currentTrack} onSeek={seekTo} />
-
-        {/* Up Next */}
-        {showQueue && (
-          <BlurView intensity={20} tint="dark" style={styles.lyricsSnippet}>
-            <View style={styles.queueHeader}>
-              <Text style={styles.lyricsTitle}>Up Next</Text>
-              <TouchableOpacity
-                onPress={() => setShowQueue(false)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <X color={COLORS.text.secondary} size={16} />
-              </TouchableOpacity>
-            </View>
-
-            {upcoming.length === 0 ? (
-              <Text style={styles.lyricsText}>Nothing queued.</Text>
-            ) : (
-              <ScrollView style={styles.queueScroll} nestedScrollEnabled>
-                {upcoming.map((track) => (
-                  <View key={track.id} style={styles.queueRow}>
-                    <TouchableOpacity
-                      style={styles.queueRowMain}
-                      onPress={() => jumpTo(track.id)}
-                    >
-                      <Text style={styles.queueTitle} numberOfLines={1}>{track.title}</Text>
-                      <Text style={styles.queueArtist} numberOfLines={1}>
-                        {track.artist.name}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => removeFromQueue(track.id)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <X color={COLORS.text.muted} size={16} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </ScrollView>
-            )}
-          </BlurView>
+        {/* Synchronized Scrolling Lyrics Card */}
+        {showLyrics && (
+          <View style={styles.lyricsCardContainer}>
+            <LyricsCard
+              title={currentTrack.title}
+              artist={currentTrack.artist.name}
+              duration={currentTrack.duration}
+              onSeek={seekTo}
+            />
+          </View>
         )}
 
+        {/* Up Next Queue */}
+        {showQueue && (
+          <View style={styles.queueContainer}>
+            <View style={styles.queueHeader}>
+              <Text style={styles.queueTitle}>Up Next ({upcoming.length})</Text>
+              <TouchableOpacity onPress={() => setShowQueue(false)}>
+                <X color="#8A99AD" size={18} />
+              </TouchableOpacity>
+            </View>
+            {upcoming.length > 0 ? (
+              upcoming.slice(0, 10).map((t, idx) => (
+                <TouchableOpacity
+                  key={`${t.id}-${idx}`}
+                  style={styles.queueItem}
+                  onPress={() => jumpTo(idx)}
+                >
+                  <Image source={{ uri: t.albumImageUrl }} style={styles.queueThumb} />
+                  <View style={styles.queueInfo}>
+                    <Text style={styles.queueTrackTitle} numberOfLines={1}>{t.title}</Text>
+                    <Text style={styles.queueTrackArtist} numberOfLines={1}>{t.artist.name}</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => removeFromQueue(idx)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <X color="#6B7C96" size={16} />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Text style={styles.queueEmpty}>Queue is empty</Text>
+            )}
+          </View>
+        )}
+
+        {/* Error notification if any */}
+        {error && (
+          <TouchableOpacity style={styles.errorBanner} onPress={retry}>
+            <Text style={styles.errorText}>{error}</Text>
+            <Text style={styles.errorHint}>Tap to retry</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
       <AddToPlaylistSheet track={addingTrack} onClose={() => setAddingTrack(null)} />
-
       <PlaybackSourceSheet visible={showSource} onClose={() => setShowSource(false)} />
     </View>
   );
@@ -310,18 +317,23 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   contentContainer: {
-    flexGrow: 1,
     paddingHorizontal: SIZES.lg,
-    justifyContent: 'space-between',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SIZES.md,
+    marginBottom: SIZES.xs,
   },
-  headerIcon: {
-    padding: SIZES.xs,
+  headerIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(10, 20, 42, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 212, 255, 0.2)',
   },
   headerTextContainer: {
     alignItems: 'center',
@@ -329,159 +341,170 @@ const styles = StyleSheet.create({
   headerSub: {
     fontFamily: FONTS.medium,
     fontSize: 10,
-    letterSpacing: 1,
-    color: COLORS.text.secondary,
-    marginBottom: 2,
+    letterSpacing: 1.5,
+    color: '#8A99AD',
   },
   headerTitle: {
-    fontFamily: FONTS.medium,
-    fontSize: 14,
-    color: COLORS.text.primary,
+    fontFamily: FONTS.bold,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: 2,
   },
-  artworkContainer: {
-    width: artworkSize,
-    height: artworkSize,
-    borderRadius: SIZES.radius.md,
-    overflow: 'hidden',
-    alignSelf: 'center',
-    elevation: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.5,
-    shadowRadius: 30,
-    marginBottom: SIZES.lg,
-  },
-  artwork: {
-    width: '100%',
-    height: '100%',
-  },
-  infoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  trackInfo: {
     alignItems: 'center',
-    marginBottom: SIZES.lg,
-  },
-  textInfo: {
-    flex: 1,
-    paddingRight: SIZES.md,
+    marginTop: 4,
+    marginBottom: SIZES.xs,
+    paddingHorizontal: SIZES.md,
   },
   trackTitle: {
-    fontFamily: FONTS.medium,
-    fontSize: 24,
-    color: COLORS.text.primary,
-    marginBottom: 4,
+    fontFamily: FONTS.bold,
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
   trackArtist: {
     fontFamily: FONTS.regular,
-    fontSize: 16,
-    color: COLORS.text.secondary,
+    fontSize: 15,
+    color: '#8A99AD',
+    marginTop: 4,
+    textAlign: 'center',
   },
-  seekRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: SIZES.xxl,
-    marginBottom: SIZES.md,
+  seekContainer: {
+    marginVertical: 4,
   },
-  seekButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SIZES.xs,
-    paddingVertical: SIZES.xs,
-    paddingHorizontal: SIZES.sm,
-  },
-  seekLabel: {
-    fontFamily: FONTS.medium,
-    fontSize: 12,
-    color: COLORS.text.secondary,
-  },
-  controlsContainer: {
+  controlsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SIZES.xl,
     paddingHorizontal: SIZES.sm,
+    marginVertical: SIZES.sm,
   },
-  playButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: COLORS.text.primary,
+  cyanPlayButton: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    backgroundColor: COLORS.accent.cyan,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: COLORS.accent.cyan,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.8,
+    shadowRadius: 18,
+    elevation: 8,
   },
-  bottomActions: {
+  bottomActionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: SIZES.xl,
-    marginBottom: SIZES.xl,
-  },
-  lyricsSnippet: {
-    borderRadius: SIZES.radius.md,
-    padding: SIZES.md,
-    backgroundColor: COLORS.glass,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    overflow: 'hidden',
-  },
-  lyricsTitle: {
-    fontFamily: FONTS.medium,
-    fontSize: 14,
-    color: COLORS.text.primary,
-    marginBottom: SIZES.xs,
-  },
-  lyricsText: {
-    fontFamily: FONTS.regular,
-    fontSize: 16,
-    color: COLORS.text.secondary,
-    lineHeight: 24,
-  },
-  errorBanner: {
-    backgroundColor: COLORS.accent.redGlow,
-    borderRadius: SIZES.radius.sm,
-    borderWidth: 1,
-    borderColor: COLORS.accent.red,
-    padding: SIZES.sm,
+    alignItems: 'center',
+    paddingHorizontal: SIZES.lg,
+    marginTop: SIZES.xs,
     marginBottom: SIZES.md,
   },
-  errorText: {
-    fontFamily: FONTS.medium,
+  bottomActionIcon: {
+    padding: 8,
+  },
+  lyricsPill: {
+    paddingHorizontal: 22,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: 'rgba(10, 20, 42, 0.75)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(0, 212, 255, 0.35)',
+  },
+  lyricsPillActive: {
+    backgroundColor: COLORS.accent.cyan,
+    borderColor: COLORS.accent.cyan,
+    shadowColor: COLORS.accent.cyan,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.7,
+    shadowRadius: 8,
+  },
+  lyricsPillText: {
+    fontFamily: FONTS.bold,
     fontSize: 13,
-    color: COLORS.text.primary,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
-  errorHint: {
-    fontFamily: FONTS.regular,
-    fontSize: 11,
-    color: COLORS.text.secondary,
-    marginTop: 2,
+  lyricsPillTextActive: {
+    color: '#060B18',
+  },
+  lyricsCardContainer: {
+    marginTop: SIZES.sm,
+    marginBottom: SIZES.lg,
+  },
+  queueContainer: {
+    marginTop: SIZES.md,
+    padding: SIZES.md,
+    borderRadius: 16,
+    backgroundColor: 'rgba(10, 20, 42, 0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 212, 255, 0.2)',
   },
   queueHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SIZES.xs,
-  },
-  queueScroll: {
-    maxHeight: 120,
-  },
-  queueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  queueRowMain: {
-    flex: 1,
-    paddingRight: SIZES.sm,
+    marginBottom: SIZES.sm,
   },
   queueTitle: {
-    fontFamily: FONTS.medium,
-    fontSize: 14,
-    color: COLORS.text.primary,
+    fontFamily: FONTS.bold,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
-  queueArtist: {
+  queueItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  queueThumb: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
+    marginRight: 10,
+  },
+  queueInfo: {
+    flex: 1,
+  },
+  queueTrackTitle: {
+    fontFamily: FONTS.medium,
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  queueTrackArtist: {
     fontFamily: FONTS.regular,
-    fontSize: 12,
-    color: COLORS.text.secondary,
-    marginTop: 1,
+    fontSize: 11,
+    color: '#8A99AD',
+  },
+  queueEmpty: {
+    fontFamily: FONTS.regular,
+    fontSize: 13,
+    color: '#8A99AD',
+    textAlign: 'center',
+    paddingVertical: SIZES.md,
+  },
+  errorBanner: {
+    backgroundColor: 'rgba(255, 51, 102, 0.15)',
+    borderWidth: 1,
+    borderColor: '#FF3366',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: SIZES.md,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontFamily: FONTS.medium,
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  errorHint: {
+    fontFamily: FONTS.regular,
+    fontSize: 11,
+    color: '#8A99AD',
+    marginTop: 2,
   },
 });

@@ -1,8 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowRight } from 'lucide-react-native';
-import { BlurView } from 'expo-blur';
+import { ChevronsRight, Headphones } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -15,50 +15,64 @@ type RootStackParamList = {
 };
 
 export default function OnboardingScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
     <View style={styles.container}>
-      {/* Abstract Background Elements */}
-      <View style={styles.blob1} />
-      <View style={styles.blob2} />
-      
-      <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
-
+      {/* Background Navy Gradient */}
       <LinearGradient
-        colors={['transparent', COLORS.background]}
-        locations={[0.5, 1]}
+        colors={['#0A1428', '#060B18', '#03060C']}
+        locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFill}
       />
 
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.subtitleTop}>MUSIC</Text>
-          <Text style={styles.subtitleTop}>BEYOND</Text>
-          <Text style={styles.subtitleTop}>NOISE</Text>
+      {/* Subtle Cyan Glow behind hero */}
+      <View style={styles.glowCircle} />
+
+      <View style={[styles.content, { paddingTop: Math.max(insets.top + 16, 40), paddingBottom: Math.max(insets.bottom + 20, 40) }]}>
+        
+        {/* Top App Name & Logo */}
+        <View style={styles.brandRow}>
+          <Image 
+            source={require('../../assets/soniq-logo.png')} 
+            style={styles.brandLogo} 
+            resizeMode="contain" 
+          />
+          <Text style={styles.brandName}>SONIQ</Text>
         </View>
 
-        <View style={styles.centerContent}>
-          <Text style={styles.title}>N Ø T E</Text>
-          <Text style={styles.tagline}>YOUR MUSIC. YOUR WAY.</Text>
+        {/* Hero Glowing Headphones */}
+        <View style={styles.heroWrapper}>
+          <Image
+            source={require('../../assets/onboarding-headphones.png')}
+            style={styles.heroImage}
+            resizeMode="contain"
+          />
         </View>
 
-        <View style={styles.bottomContent}>
-          <TouchableOpacity 
-            style={styles.button}
-            activeOpacity={0.8}
-            onPress={() => navigation.replace('ProfileSetup')}
-          >
-            <Text style={styles.buttonText}>Get Started</Text>
-            <View style={styles.iconCircle}>
-              <ArrowRight color={COLORS.text.primary} size={20} />
-            </View>
-          </TouchableOpacity>
-          
-          <Text style={styles.footerText}>LISTEN FREELY.</Text>
-          <Text style={styles.footerText}>LIVE FULLY.</Text>
-          <Text style={styles.madeBy}>MADE BY SJBUILDS</Text>
+        {/* Text Section */}
+        <View style={styles.textSection}>
+          <Text style={styles.titleLine1}>Start Your</Text>
+          <Text style={styles.titleLine2}>Sonic Journey</Text>
+          <Text style={styles.subtitle}>
+            Dive into a world of music — millions of songs, custom playlists, and every genre you love.
+          </Text>
         </View>
+
+        {/* Call To Action Pill Button */}
+        <TouchableOpacity
+          style={styles.ctaButton}
+          activeOpacity={0.85}
+          onPress={() => navigation.replace('ProfileSetup')}
+        >
+          <View style={styles.arrowCircle}>
+            <ChevronsRight color="#060B18" size={22} strokeWidth={2.8} />
+          </View>
+          <Text style={styles.ctaText}>Turn on your music</Text>
+          <Headphones color={COLORS.accent.cyan} size={22} strokeWidth={2} />
+        </TouchableOpacity>
+
       </View>
     </View>
   );
@@ -69,106 +83,127 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  blob1: {
+  glowCircle: {
     position: 'absolute',
-    top: height * 0.1,
-    left: -width * 0.2,
-    width: width,
-    height: width,
-    borderRadius: width / 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  blob2: {
-    position: 'absolute',
-    top: height * 0.3,
-    right: -width * 0.3,
-    width: width * 1.2,
-    height: width * 1.2,
-    borderRadius: width * 0.6,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    top: height * 0.18,
+    alignSelf: 'center',
+    width: width * 0.85,
+    height: width * 0.85,
+    borderRadius: (width * 0.85) / 2,
+    backgroundColor: 'rgba(0, 212, 255, 0.12)',
+    shadowColor: COLORS.accent.cyan,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 50,
   },
   content: {
     flex: 1,
-    padding: SIZES.xl,
+    paddingHorizontal: SIZES.lg,
     justifyContent: 'space-between',
-    paddingTop: 80,
-    paddingBottom: 60,
+    alignItems: 'center',
   },
-  header: {
-    alignItems: 'flex-start',
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  subtitleTop: {
-    fontFamily: FONTS.medium,
-    fontSize: 10,
+  brandLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+  },
+  brandName: {
+    fontFamily: FONTS.bold,
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
     letterSpacing: 2,
-    color: COLORS.text.secondary,
-    lineHeight: 16,
   },
-  centerContent: {
+  heroWrapper: {
+    width: width * 0.78,
+    height: width * 0.78,
+    justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: COLORS.accent.cyan,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.45,
+    shadowRadius: 30,
+    elevation: 12,
   },
-  title: {
-    fontFamily: FONTS.regular,
-    fontSize: 48,
-    letterSpacing: 12,
-    color: COLORS.text.primary,
-    marginBottom: SIZES.md,
-  },
-  tagline: {
-    fontFamily: FONTS.medium,
-    fontSize: 10,
-    letterSpacing: 3,
-    color: COLORS.text.secondary,
-  },
-  bottomContent: {
-    alignItems: 'center',
+  heroImage: {
     width: '100%',
+    height: '100%',
+    borderRadius: 28,
   },
-  button: {
+  textSection: {
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: SIZES.sm,
+  },
+  titleLine1: {
+    fontFamily: FONTS.bold,
+    fontSize: 34,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    lineHeight: 40,
+  },
+  titleLine2: {
+    fontFamily: FONTS.bold,
+    fontSize: 34,
+    fontWeight: '800',
+    color: COLORS.accent.cyan,
+    textAlign: 'center',
+    lineHeight: 40,
+    marginTop: 2,
+    textShadowColor: 'rgba(0, 212, 255, 0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 12,
+  },
+  subtitle: {
+    fontFamily: FONTS.regular,
+    fontSize: 14,
+    color: COLORS.text.secondary,
+    textAlign: 'center',
+    marginTop: 12,
+    lineHeight: 21,
+    paddingHorizontal: SIZES.md,
+  },
+  ctaButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.glass,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    borderRadius: SIZES.radius.pill,
-    paddingVertical: SIZES.md,
-    paddingHorizontal: SIZES.xl,
     width: '100%',
-    marginBottom: SIZES.xl,
+    height: 62,
+    paddingHorizontal: 10,
+    paddingRight: 20,
+    backgroundColor: 'rgba(10, 20, 42, 0.85)',
+    borderRadius: 31,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 212, 255, 0.35)',
+    shadowColor: COLORS.accent.cyan,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 6,
   },
-  buttonText: {
-    fontFamily: FONTS.medium,
-    fontSize: 16,
-    color: COLORS.text.primary,
-    flex: 1,
-    textAlign: 'center',
-  },
-  iconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  arrowCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.accent.cyan,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: COLORS.accent.cyan,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
   },
-  madeBy: {
+  ctaText: {
     fontFamily: FONTS.medium,
-    fontSize: 10,
-    letterSpacing: 3,
-    color: COLORS.text.muted,
-    marginTop: SIZES.md,
-    opacity: 0.8,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
-  footerText: {
-    fontFamily: FONTS.medium,
-    fontSize: 10,
-    letterSpacing: 2,
-    color: COLORS.text.muted,
-    lineHeight: 16,
-  }
 });

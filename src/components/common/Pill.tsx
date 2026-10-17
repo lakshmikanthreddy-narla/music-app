@@ -40,21 +40,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeContainer: {
-    backgroundColor: COLORS.text.primary,
+    backgroundColor: COLORS.accent.cyan,
+    shadowColor: COLORS.accent.cyan,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   inactiveContainer: {
-    backgroundColor: COLORS.glass,
+    backgroundColor: 'rgba(13, 27, 54, 0.7)',
     borderWidth: 1,
-    borderColor: COLORS.glassBorder,
+    borderColor: 'rgba(0, 212, 255, 0.18)',
   },
   label: {
     fontFamily: FONTS.medium,
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: '600',
   },
   activeLabel: {
-    color: COLORS.background,
+    color: '#060B18',
+    fontWeight: '700',
   },
   inactiveLabel: {
-    color: COLORS.text.primary,
+    color: COLORS.text.secondary,
   }
 });

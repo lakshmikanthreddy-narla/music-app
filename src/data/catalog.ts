@@ -7,14 +7,18 @@ import { Category } from '../core/types';
  * provider when tapped. The colours match the existing visual design.
  */
 export const BROWSE_CATEGORIES: Category[] = [
-  { id: 'c1', name: 'Charts', color: '#1DB954', query: 'top hits this week' },
-  { id: 'c2', name: 'New Releases', color: '#8A2BE2', query: 'new music releases' },
-  { id: 'c3', name: 'Moods', color: '#FF7F50', query: 'chill mood playlist' },
-  { id: 'c4', name: 'Indian', color: '#DAA520', query: 'bollywood hits' },
-  { id: 'c5', name: 'Hip-Hop', color: '#4682B4', query: 'hip hop essentials' },
-  { id: 'c6', name: 'Pop', color: '#FF69B4', query: 'pop hits' },
-  { id: 'c7', name: 'EDM', color: '#00CED1', query: 'edm dance mix' },
-  { id: 'c8', name: 'Rock', color: '#B22222', query: 'rock classics' },
+  { id: 'c1', name: 'Top Charts', color: '#0083B0', query: 'top hits global charts' },
+  { id: 'c2', name: 'New Releases', color: '#8E2DE2', query: 'new music releases' },
+  { id: 'c3', name: 'Mood', color: '#1A365D', query: 'chill mood playlist' },
+  { id: 'c4', name: 'Party', color: '#009688', query: 'party dance hits' },
+  { id: 'c5', name: 'Chill', color: '#4A148C', query: 'chill acoustic lofi' },
+  { id: 'c6', name: 'Workout', color: '#1B5E20', query: 'workout motivation gym' },
+  { id: 'c7', name: 'Pop', color: '#C2185B', query: 'top pop hits' },
+  { id: 'c8', name: 'Hip Hop', color: '#B45309', query: 'hip hop rap hits' },
+  { id: 'c9', name: 'Rock', color: '#880E4F', query: 'rock classics' },
+  { id: 'c10', name: 'Indie', color: '#C2410C', query: 'indie alternative' },
+  { id: 'c11', name: 'EDM', color: '#00B4D8', query: 'edm dance mix' },
+  { id: 'c12', name: 'Classical', color: '#4A0E4E', query: 'classical piano violin' },
 ];
 
 /**

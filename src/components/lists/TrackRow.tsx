@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   playingTitle: {
-    color: COLORS.accent.green,
+    color: COLORS.accent.cyan,
   },
   artist: {
     fontFamily: FONTS.regular,

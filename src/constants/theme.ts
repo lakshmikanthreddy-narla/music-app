@@ -1,31 +1,33 @@
 export const COLORS = {
-  background: '#050707',
-  surface: '#090B0B',
-  surfaceLight: '#0D1010',
-  glass: 'rgba(255, 255, 255, 0.05)', // Extremely subtle glass
-  // Opaque lift for bars that sit over scrolling content (mini player, tab bar).
-  // These must not be translucent: blur is unreliable on Android, so content
-  // would otherwise read straight through them.
-  surfaceRaised: '#121616',
-  hairline: 'rgba(255, 255, 255, 0.08)',
-  glassBorder: 'rgba(255, 255, 255, 0.1)', // 1px borders
+  background: '#060B18',
+  surface: '#0A1128',
+  surfaceLight: '#0E1A38',
+  glass: 'rgba(10, 17, 40, 0.75)',
+  surfaceRaised: '#0D1B36',
+  hairline: 'rgba(0, 212, 255, 0.14)',
+  glassBorder: 'rgba(0, 212, 255, 0.22)',
   
   text: {
-    primary: '#F0F0F0',
-    secondary: '#888888',
-    muted: '#555555',
+    primary: '#FFFFFF',
+    secondary: '#8A99AD',
+    muted: '#4E5D78',
   },
   
   accent: {
-    green: '#1DB954', // Subtle Spotify-like green but a bit distinct
-    greenGlow: 'rgba(29, 185, 84, 0.15)',
-    red: '#FF4444',
-    redGlow: 'rgba(255, 68, 68, 0.15)',
+    cyan: '#00D4FF',
+    cyanBright: '#00F0FF',
+    cyanGlow: 'rgba(0, 212, 255, 0.35)',
+    green: '#00E676',
+    greenGlow: 'rgba(0, 230, 118, 0.2)',
+    red: '#FF3366',
+    redGlow: 'rgba(255, 51, 102, 0.2)',
+    purple: '#7928CA',
+    navyGradient: ['#060B18', '#0A1128', '#0E1A38'] as const,
   },
   
   player: {
-    progressTrack: 'rgba(255, 255, 255, 0.2)',
-    progressFill: '#FFFFFF',
+    progressTrack: 'rgba(0, 212, 255, 0.2)',
+    progressFill: '#00D4FF',
   }
 };
 

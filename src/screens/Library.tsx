@@ -11,11 +11,11 @@ import {
   Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Plus, X, Trash2 } from 'lucide-react-native';
+import { Plus, X, Trash2, Search, Heart, ChevronRight } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
 import { Pill } from '../components/common/Pill';
 import { GlassCard } from '../components/common/GlassCard';
-import { TrackRow } from '../components/lists/TrackRow';
 import { MiniPlayer } from '../components/player/MiniPlayer';
 import { StatusBarScrim } from '../components/common/StatusBarScrim';
 import { Playlist, Track } from '../core/types';
@@ -27,9 +27,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 type LibraryStackParams = {
   Playlist: { playlistId: string };
   NowPlaying: undefined;
+  SearchTab: undefined;
 };
 
-const FILTERS = ['Playlists', 'Artists', 'Albums', 'Downloaded'];
+const FILTERS = ['Playlists', 'Artists', 'Albums', 'Podcasts'];
 
 export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
@@ -53,7 +54,7 @@ export default function LibraryScreen() {
   const [showImport, setShowImport] = useState(false);
   const [importUrl, setImportUrl] = useState('');
   const [newPlaylistName, setNewPlaylistName] = useState('');
-  /** Playlists have their own page, so a tap navigates rather than expanding. */
+
   const openPlaylist = useCallback(
     (playlist: Playlist) => {
       touchPlaylist(playlist.id);
@@ -62,17 +63,44 @@ export default function LibraryScreen() {
     [navigation, touchPlaylist]
   );
 
-  // "Liked Songs" always leads, then the user's own and imported playlists.
+  const onPlayPlaylist = useCallback(
+    (playlist: Playlist) => {
+      if (!playlist.tracks.length) return;
+      playTrack(playlist.tracks[0], {
+        tracks: playlist.tracks,
+        label: playlist.name,
+      });
+    },
+    [playTrack]
+  );
+
+  const onImport = useCallback(async () => {
+    Keyboard.dismiss();
+    const ok = await importPlaylist(importUrl);
+    if (ok) {
+      setImportUrl('');
+      setShowImport(false);
+    }
+  }, [importPlaylist, importUrl]);
+
+  const onCreatePlaylist = useCallback(() => {
+    const trimmed = newPlaylistName.trim();
+    if (!trimmed) return;
+    Keyboard.dismiss();
+    const created = createPlaylist(trimmed);
+    setNewPlaylistName('');
+    setShowImport(false);
+    openPlaylist(created);
+  }, [createPlaylist, newPlaylistName, openPlaylist]);
+
   const allPlaylists = useMemo<Playlist[]>(
     () => [
       likedPlaylist,
-      // Most recently opened or changed first, so recents read as playlists.
       ...[...playlists].sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0)),
     ],
     [likedPlaylist, playlists]
   );
 
-  /** Artists and albums are derived from what is actually in the library. */
   const derived = useMemo(() => {
     const tracks = [...liked, ...playlists.flatMap((p) => p.tracks), ...recentlyPlayed];
 
@@ -98,76 +126,63 @@ export default function LibraryScreen() {
     }
 
     return {
-      artists: [...artists.values()].sort((x, y) => y.count - x.count),
-      albums: [...albums.values()].sort((x, y) => y.count - x.count),
+      artists: Array.from(artists.values()),
+      albums: Array.from(albums.values()),
     };
   }, [liked, playlists, recentlyPlayed]);
 
-
-  const onPlayPlaylist = (playlist: Playlist) => {
-    if (!playlist.tracks.length) return;
-    playTrack(playlist.tracks[0], { tracks: playlist.tracks, label: playlist.name });
-  };
-
-  /** Create an empty playlist, then open its page so it can be filled. */
-  const onCreatePlaylist = () => {
-    const name = newPlaylistName.trim();
-    if (!name) return;
-
-    const playlist = createPlaylist(name);
-    setNewPlaylistName('');
-    setShowImport(false);
-    Keyboard.dismiss();
-    navigation.navigate('Playlist', { playlistId: playlist.id });
-  };
-
-  const onImport = async () => {
-    const url = importUrl.trim();
-    if (!url) return;
-
-    try {
-      await importPlaylist(url);
-      setImportUrl('');
-      setShowImport(false);
-    } catch {
-      // importError is rendered inline below.
-    }
-  };
-
   return (
     <View style={styles.container}>
+      <LinearGradient
+        colors={['#0A1326', '#060B18', '#040710']}
+        locations={[0, 0.4, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+
       <ScrollView
-        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + SIZES.lg, paddingBottom: SIZES.bottomInset }
+          { paddingTop: insets.top + SIZES.md, paddingBottom: SIZES.bottomInset },
         ]}
+        showsVerticalScrollIndicator={false}
       >
+        {/* Top Header matching PDF Page 7 */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Your Library</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => {
-              setShowImport((v) => !v);
-              clearImportError();
-            }}
-          >
-            {showImport ? (
-              <X color={COLORS.text.primary} size={24} />
-            ) : (
-              <Plus color={COLORS.text.primary} size={24} />
-            )}
-          </TouchableOpacity>
+          <View style={styles.headerRightIcons}>
+            <TouchableOpacity
+              style={styles.headerIconBtn}
+              onPress={() => navigation.navigate('SearchTab')}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Search color="#FFFFFF" size={20} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.headerIconBtn}
+              onPress={() => {
+                setShowImport((v) => !v);
+                clearImportError();
+              }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              {showImport ? (
+                <X color="#FFFFFF" size={20} />
+              ) : (
+                <Plus color={COLORS.accent.cyan} size={22} />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
         {showImport && (
-          <GlassCard intensity={20} style={styles.importCard}>
+          <View style={styles.importCard}>
             <Text style={styles.importTitle}>New playlist</Text>
             <View style={styles.importRow}>
               <TextInput
                 style={styles.importInput}
                 placeholder="Playlist name"
-                placeholderTextColor={COLORS.text.muted}
+                placeholderTextColor="#8A99AD"
                 value={newPlaylistName}
                 onChangeText={setNewPlaylistName}
                 onSubmitEditing={onCreatePlaylist}
@@ -193,7 +208,7 @@ export default function LibraryScreen() {
               <TextInput
                 style={styles.importInput}
                 placeholder="Paste a playlist or album link"
-                placeholderTextColor={COLORS.text.muted}
+                placeholderTextColor="#8A99AD"
                 value={importUrl}
                 onChangeText={setImportUrl}
                 onSubmitEditing={onImport}
@@ -207,16 +222,17 @@ export default function LibraryScreen() {
                 disabled={importing}
               >
                 {importing ? (
-                  <ActivityIndicator size="small" color={COLORS.background} />
+                  <ActivityIndicator size="small" color="#060B18" />
                 ) : (
                   <Text style={styles.importButtonText}>Add</Text>
                 )}
               </TouchableOpacity>
             </View>
             {importError && <Text style={styles.importError}>{importError}</Text>}
-          </GlassCard>
+          </View>
         )}
 
+        {/* Filter Category Pills */}
         <View style={styles.filtersContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {FILTERS.map(filter => (
@@ -230,42 +246,58 @@ export default function LibraryScreen() {
           </ScrollView>
         </View>
 
+        {/* Library Items List */}
         <View style={styles.listContainer}>
           {activeFilter === 'Playlists' &&
             allPlaylists.map(playlist => (
-              <View key={playlist.id}>
-                <TouchableOpacity
-                  style={styles.playlistRow}
-                  activeOpacity={0.7}
-                  onPress={() => openPlaylist(playlist)}
-                  onLongPress={() => onPlayPlaylist(playlist)}
-                >
-                  {playlist.coverImageUrl && playlist.coverImageUrl !== 'liked_songs_gradient' ? (
-                    <Image
-                      source={{ uri: playlist.coverImageUrl }}
-                      style={styles.playlistImage}
-                    />
-                  ) : (
-                    <View style={[styles.playlistImage, styles.likedSongsGradient]} />
-                  )}
-                  <View style={styles.playlistInfo}>
-                    <Text style={styles.playlistTitle}>{playlist.name}</Text>
-                    <Text style={styles.playlistSubtitle}>
-                      {playlist.id === 'liked'
-                        ? `${playlist.tracks.length} songs`
-                        : `Playlist • ${playlist.creator} • ${playlist.tracks.length}`}
+              <TouchableOpacity
+                key={playlist.id}
+                style={styles.playlistRow}
+                activeOpacity={0.75}
+                onPress={() => openPlaylist(playlist)}
+                onLongPress={() => onPlayPlaylist(playlist)}
+              >
+                {playlist.id === 'liked' ? (
+                  <LinearGradient
+                    colors={['#7928CA', '#4A0E4E']}
+                    style={styles.likedSquare}
+                  >
+                    <Heart color="#FFFFFF" fill="#FFFFFF" size={24} />
+                  </LinearGradient>
+                ) : playlist.coverImageUrl ? (
+                  <Image
+                    source={{ uri: playlist.coverImageUrl }}
+                    style={styles.playlistImage}
+                  />
+                ) : (
+                  <View style={styles.playlistFallbackImage}>
+                    <Text style={styles.playlistFallbackText}>
+                      {playlist.name.charAt(0).toUpperCase()}
                     </Text>
                   </View>
-                  {playlist.id !== 'liked' && (
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={() => deletePlaylist(playlist.id)}
-                    >
-                      <Trash2 color={COLORS.text.muted} size={18} />
-                    </TouchableOpacity>
-                  )}
-                </TouchableOpacity>
-              </View>
+                )}
+
+                <View style={styles.playlistInfo}>
+                  <Text style={styles.playlistTitle} numberOfLines={1}>{playlist.name}</Text>
+                  <Text style={styles.playlistSubtitle} numberOfLines={1}>
+                    {playlist.id === 'liked'
+                      ? `Playlist • ${playlist.tracks.length} songs`
+                      : `Playlist • SONIQ • ${playlist.tracks.length} tracks`}
+                  </Text>
+                </View>
+
+                {playlist.id !== 'liked' ? (
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => deletePlaylist(playlist.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Trash2 color="#6B7C96" size={18} />
+                  </TouchableOpacity>
+                ) : (
+                  <ChevronRight color="#6B7C96" size={20} />
+                )}
+              </TouchableOpacity>
             ))}
 
           {activeFilter === 'Artists' &&
@@ -274,15 +306,16 @@ export default function LibraryScreen() {
                 <View key={artist.name} style={styles.playlistRow}>
                   <Image source={{ uri: artist.image }} style={styles.artistImage} />
                   <View style={styles.playlistInfo}>
-                    <Text style={styles.playlistTitle}>{artist.name}</Text>
-                    <Text style={styles.playlistSubtitle}>
+                    <Text style={styles.playlistTitle} numberOfLines={1}>{artist.name}</Text>
+                    <Text style={styles.playlistSubtitle} numberOfLines={1}>
                       Artist • {artist.count} {artist.count === 1 ? 'song' : 'songs'}
                     </Text>
                   </View>
+                  <ChevronRight color="#6B7C96" size={20} />
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyHint}>Artists appear here as you save music.</Text>
+              <Text style={styles.emptyHint}>Artists appear here as you listen to music.</Text>
             ))}
 
           {activeFilter === 'Albums' &&
@@ -291,20 +324,21 @@ export default function LibraryScreen() {
                 <View key={album.name} style={styles.playlistRow}>
                   <Image source={{ uri: album.image }} style={styles.playlistImage} />
                   <View style={styles.playlistInfo}>
-                    <Text style={styles.playlistTitle}>{album.name}</Text>
-                    <Text style={styles.playlistSubtitle}>
+                    <Text style={styles.playlistTitle} numberOfLines={1}>{album.name}</Text>
+                    <Text style={styles.playlistSubtitle} numberOfLines={1}>
                       Album • {album.artist}
                     </Text>
                   </View>
+                  <ChevronRight color="#6B7C96" size={20} />
                 </View>
               ))
             ) : (
               <Text style={styles.emptyHint}>Albums appear here as you save music.</Text>
             ))}
 
-          {activeFilter === 'Downloaded' && (
+          {activeFilter === 'Podcasts' && (
             <Text style={styles.emptyHint}>
-              NØTE streams on demand and doesn't store audio offline.
+              Saved podcasts will appear here.
             </Text>
           )}
         </View>
@@ -340,15 +374,28 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.md,
   },
   headerTitle: {
-    fontFamily: FONTS.medium,
-    fontSize: 28,
-    color: COLORS.text.primary,
+    fontFamily: FONTS.bold,
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
-  addButton: {
-    padding: SIZES.sm,
+  headerRightIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerIconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(10, 20, 42, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 212, 255, 0.2)',
   },
   filtersContainer: {
-    marginBottom: SIZES.xl,
+    marginBottom: SIZES.lg,
   },
   listContainer: {
     flex: 1,
@@ -357,61 +404,91 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: SIZES.md,
-    paddingVertical: SIZES.xs,
+    paddingVertical: 4,
+  },
+  likedSquare: {
+    width: 58,
+    height: 58,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#7928CA',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 4,
   },
   playlistImage: {
-    width: 64,
-    height: 64,
-    borderRadius: SIZES.radius.sm,
-    backgroundColor: COLORS.surfaceLight,
+    width: 58,
+    height: 58,
+    borderRadius: 12,
+    backgroundColor: '#0F1E3D',
+  },
+  playlistFallbackImage: {
+    width: 58,
+    height: 58,
+    borderRadius: 12,
+    backgroundColor: '#0F1E3D',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 212, 255, 0.2)',
+  },
+  playlistFallbackText: {
+    fontFamily: FONTS.bold,
+    fontSize: 22,
+    color: COLORS.accent.cyan,
   },
   artistImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: COLORS.surfaceLight,
-  },
-  likedSongsGradient: {
-    backgroundColor: '#8A2BE2', // Simple fallback for linear gradient
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#0F1E3D',
+    borderWidth: 1.5,
+    borderColor: COLORS.accent.cyan,
   },
   playlistInfo: {
     flex: 1,
-    marginLeft: SIZES.md,
+    marginLeft: 14,
     justifyContent: 'center',
   },
   playlistTitle: {
-    fontFamily: FONTS.medium,
+    fontFamily: FONTS.bold,
     fontSize: 16,
-    color: COLORS.text.primary,
-    marginBottom: 4,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 3,
   },
   playlistSubtitle: {
     fontFamily: FONTS.regular,
-    fontSize: 14,
-    color: COLORS.text.secondary,
+    fontSize: 13,
+    color: '#8A99AD',
   },
   deleteButton: {
-    padding: SIZES.sm,
-  },
-  expandedTracks: {
-    marginBottom: SIZES.md,
+    padding: 8,
   },
   emptyHint: {
     fontFamily: FONTS.regular,
     fontSize: 14,
-    color: COLORS.text.muted,
+    color: '#8A99AD',
     paddingHorizontal: SIZES.md,
-    paddingVertical: SIZES.sm,
+    paddingVertical: SIZES.lg,
+    textAlign: 'center',
   },
   importCard: {
     padding: SIZES.md,
     marginBottom: SIZES.md,
+    borderRadius: 16,
+    backgroundColor: 'rgba(10, 20, 42, 0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 212, 255, 0.25)',
   },
   importTitle: {
-    fontFamily: FONTS.medium,
+    fontFamily: FONTS.bold,
     fontSize: 14,
-    color: COLORS.text.primary,
-    marginBottom: SIZES.sm,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: SIZES.xs,
   },
   importRow: {
     flexDirection: 'row',
@@ -419,23 +496,23 @@ const styles = StyleSheet.create({
   },
   importInput: {
     flex: 1,
-    height: 40,
+    height: 42,
     fontFamily: FONTS.regular,
     fontSize: 14,
-    color: COLORS.text.primary,
-    backgroundColor: COLORS.glass,
+    color: '#FFFFFF',
+    backgroundColor: 'rgba(6, 11, 24, 0.8)',
     borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    borderRadius: SIZES.radius.sm,
+    borderColor: 'rgba(0, 212, 255, 0.2)',
+    borderRadius: 10,
     paddingHorizontal: SIZES.sm,
   },
   importButton: {
     marginLeft: SIZES.sm,
-    height: 40,
-    minWidth: 56,
+    height: 42,
+    minWidth: 60,
     paddingHorizontal: SIZES.md,
-    borderRadius: SIZES.radius.sm,
-    backgroundColor: COLORS.text.primary,
+    borderRadius: 10,
+    backgroundColor: COLORS.accent.cyan,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -444,18 +521,19 @@ const styles = StyleSheet.create({
   },
   panelDivider: {
     height: 1,
-    backgroundColor: COLORS.glassBorder,
+    backgroundColor: 'rgba(0, 212, 255, 0.15)',
     marginVertical: SIZES.md,
   },
   importButtonText: {
-    fontFamily: FONTS.medium,
+    fontFamily: FONTS.bold,
     fontSize: 14,
-    color: COLORS.background,
+    fontWeight: '700',
+    color: '#060B18',
   },
   importError: {
     fontFamily: FONTS.regular,
     fontSize: 12,
-    color: COLORS.accent.red,
+    color: '#FF3366',
     marginTop: SIZES.sm,
   },
 });
