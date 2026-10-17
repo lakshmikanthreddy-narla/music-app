@@ -78,7 +78,11 @@ export const TabNavigator = () => {
 
 const styles = StyleSheet.create({
   tabBarBackground: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: COLORS.tabBar,
     borderRadius: 28,
     borderWidth: 1,
