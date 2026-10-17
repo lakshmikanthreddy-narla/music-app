@@ -10,10 +10,11 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, Heart, ListMusic, Plus, X } from 'lucide-react-native';
+import { Check, Heart, ListMusic, ListPlus, Plus, X } from 'lucide-react-native';
 import { COLORS, SIZES, FONTS } from '../../constants/theme';
 import { Track } from '../../core/types';
 import { useLibrary } from '../../hooks/useLibrary';
+import { usePlayer } from '../../hooks/usePlayer';
 
 type Props = {
   /** The track being filed. Null closes the sheet. */
@@ -38,6 +39,13 @@ export const AddToPlaylistSheet: React.FC<Props> = ({ track, onClose }) => {
     toggleLike,
     isLiked,
   } = useLibrary();
+  const { playNext } = usePlayer();
+
+  const handlePlayNext = useCallback(() => {
+    if (!track) return;
+    playNext(track);
+    close();
+  }, [track, playNext, close]);
 
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
@@ -119,7 +127,7 @@ export const AddToPlaylistSheet: React.FC<Props> = ({ track, onClose }) => {
       >
         <View style={styles.header}>
           <View style={styles.headerText}>
-            <Text style={styles.title}>Add to playlist</Text>
+            <Text style={styles.title}>Track Options</Text>
             {!!track && (
               <Text style={styles.subtitle} numberOfLines={1}>
                 {track.title}
@@ -130,6 +138,21 @@ export const AddToPlaylistSheet: React.FC<Props> = ({ track, onClose }) => {
             <X color={COLORS.text.secondary} size={22} />
           </TouchableOpacity>
         </View>
+
+        {/* Play Next action */}
+        <TouchableOpacity
+          style={styles.playNextCard}
+          activeOpacity={0.7}
+          onPress={handlePlayNext}
+        >
+          <View style={styles.playNextIconWrapper}>
+            <ListPlus color={COLORS.accent.green} size={22} />
+          </View>
+          <View style={styles.playNextTextContainer}>
+            <Text style={styles.playNextTitle}>Play Next</Text>
+            <Text style={styles.playNextSubtitle}>Plays automatically after current song</Text>
+          </View>
+        </TouchableOpacity>
 
         {creating ? (
           <View style={styles.createRow}>
@@ -331,5 +354,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.text.secondary,
     paddingVertical: SIZES.lg,
+  },
+  playNextCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SIZES.sm + 2,
+    paddingHorizontal: SIZES.sm,
+    marginBottom: SIZES.md,
+    borderRadius: SIZES.radius.md,
+    backgroundColor: 'rgba(29, 185, 84, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(29, 185, 84, 0.25)',
+  },
+  playNextIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: SIZES.radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(29, 185, 84, 0.18)',
+  },
+  playNextTextContainer: {
+    flex: 1,
+    marginLeft: SIZES.md,
+  },
+  playNextTitle: {
+    fontFamily: FONTS.medium,
+    fontSize: 16,
+    color: COLORS.text.primary,
+  },
+  playNextSubtitle: {
+    fontFamily: FONTS.regular,
+    fontSize: 12,
+    color: COLORS.text.secondary,
+    marginTop: 2,
   },
 });
