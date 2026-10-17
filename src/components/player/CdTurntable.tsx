@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Heart } from 'lucide-react-native';
-import { COLORS, FONTS } from '../../constants/theme';
+import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { useProgress } from '../../hooks/usePlayer';
 
 const { width } = Dimensions.get('window');
