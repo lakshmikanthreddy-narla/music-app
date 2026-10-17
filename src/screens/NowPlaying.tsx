@@ -22,7 +22,8 @@ import { usePlayer } from '../hooks/usePlayer';
 import { useLibrary } from '../hooks/useLibrary';
 import { useNavigation } from '@react-navigation/native';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+const artworkSize = Math.min(width - SIZES.lg * 2, height * 0.38, 330);
 
 /** Seconds -> m:ss, for the progress labels. */
 const formatTime = (seconds: number): string => {
@@ -85,11 +86,22 @@ export default function NowPlayingScreen() {
         style={StyleSheet.absoluteFill}
       />
 
-      <View style={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom + SIZES.md }]}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.contentContainer,
+          { paddingTop: insets.top, paddingBottom: insets.bottom + SIZES.md }
+        ]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
 
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIcon}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.headerIcon}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <ChevronDown color={COLORS.text.primary} size={28} />
           </TouchableOpacity>
           <View style={styles.headerTextContainer}>
@@ -103,6 +115,7 @@ export default function NowPlayingScreen() {
           <TouchableOpacity
             style={styles.headerIcon}
             onPress={() => setAddingTrack(currentTrack)}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
             <ListPlus color={COLORS.text.primary} size={24} />
           </TouchableOpacity>
@@ -119,7 +132,10 @@ export default function NowPlayingScreen() {
             <Text style={styles.trackTitle} numberOfLines={1}>{currentTrack.title}</Text>
             <Text style={styles.trackArtist} numberOfLines={1}>{currentTrack.artist.name}</Text>
           </View>
-          <TouchableOpacity onPress={() => toggleLike(currentTrack)}>
+          <TouchableOpacity
+            onPress={() => toggleLike(currentTrack)}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <Heart
               color={liked ? COLORS.accent.green : COLORS.text.primary}
               fill={liked ? COLORS.accent.green : 'transparent'}
@@ -136,18 +152,26 @@ export default function NowPlayingScreen() {
         {/* Error state -- never leaves the player stuck */}
         {error && (
           <TouchableOpacity activeOpacity={0.8} onPress={retry} style={styles.errorBanner}>
-            <Text style={styles.errorText} numberOfLines={6}>{error}</Text>
+            <Text style={styles.errorText} numberOfLines={3}>{error}</Text>
             <Text style={styles.errorHint}>Tap to retry</Text>
           </TouchableOpacity>
         )}
 
         {/* Relative seek, mirroring the lock-screen +/-10s buttons. */}
         <View style={styles.seekRow}>
-          <TouchableOpacity style={styles.seekButton} onPress={() => seekBy(-10)}>
+          <TouchableOpacity
+            style={styles.seekButton}
+            onPress={() => seekBy(-10)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <RotateCcw color={COLORS.text.secondary} size={22} />
             <Text style={styles.seekLabel}>10</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.seekButton} onPress={() => seekBy(10)}>
+          <TouchableOpacity
+            style={styles.seekButton}
+            onPress={() => seekBy(10)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <RotateCw color={COLORS.text.secondary} size={22} />
             <Text style={styles.seekLabel}>10</Text>
           </TouchableOpacity>
@@ -155,13 +179,23 @@ export default function NowPlayingScreen() {
 
         {/* Main Controls */}
         <View style={styles.controlsContainer}>
-          <TouchableOpacity onPress={toggleShuffle}>
+          <TouchableOpacity
+            onPress={toggleShuffle}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <Shuffle color={shuffle ? COLORS.accent.green : COLORS.text.secondary} size={24} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={previous}>
+          <TouchableOpacity
+            onPress={previous}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <SkipBack color={COLORS.text.primary} size={32} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.playButton} onPress={togglePlayPause}>
+          <TouchableOpacity
+            style={styles.playButton}
+            onPress={togglePlayPause}
+            activeOpacity={0.85}
+          >
             {busy ? (
               <ActivityIndicator color={COLORS.background} />
             ) : isPlaying ? (
@@ -170,10 +204,16 @@ export default function NowPlayingScreen() {
               <Play color={COLORS.background} size={32} fill={COLORS.background} />
             )}
           </TouchableOpacity>
-          <TouchableOpacity onPress={next}>
+          <TouchableOpacity
+            onPress={next}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <SkipForward color={COLORS.text.primary} size={32} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={cycleRepeat}>
+          <TouchableOpacity
+            onPress={cycleRepeat}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             {repeat === 'one' ? (
               <Repeat1 color={COLORS.accent.green} size={24} />
             ) : (
@@ -187,16 +227,22 @@ export default function NowPlayingScreen() {
 
         {/* Bottom Actions */}
         <View style={styles.bottomActions}>
-          <TouchableOpacity onPress={() => setShowSource(true)}>
+          <TouchableOpacity
+            onPress={() => setShowSource(true)}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <MonitorSpeaker
               color={canPlayCurrent ? COLORS.text.secondary : COLORS.accent.red}
               size={24}
             />
           </TouchableOpacity>
-          <TouchableOpacity>
+          <TouchableOpacity hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <Share color={COLORS.text.secondary} size={24} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowQueue((v) => !v)}>
+          <TouchableOpacity
+            onPress={() => setShowQueue((v) => !v)}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <ListMusic
               color={showQueue ? COLORS.accent.green : COLORS.text.secondary}
               size={24}
@@ -204,14 +250,15 @@ export default function NowPlayingScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Up Next. Lyrics used to render here as a placeholder that only
-            ever showed the track title; it was removed rather than left as a
-            dead affordance. */}
+        {/* Up Next */}
         {showQueue && (
           <BlurView intensity={20} tint="dark" style={styles.lyricsSnippet}>
             <View style={styles.queueHeader}>
               <Text style={styles.lyricsTitle}>Up Next</Text>
-              <TouchableOpacity onPress={() => setShowQueue(false)}>
+              <TouchableOpacity
+                onPress={() => setShowQueue(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <X color={COLORS.text.secondary} size={16} />
               </TouchableOpacity>
             </View>
@@ -231,7 +278,10 @@ export default function NowPlayingScreen() {
                         {track.artist.name}
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => removeFromQueue(track.id)}>
+                    <TouchableOpacity
+                      onPress={() => removeFromQueue(track.id)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
                       <X color={COLORS.text.muted} size={16} />
                     </TouchableOpacity>
                   </View>
@@ -241,7 +291,7 @@ export default function NowPlayingScreen() {
           </BlurView>
         )}
 
-      </View>
+      </ScrollView>
 
       <AddToPlaylistSheet track={addingTrack} onClose={() => setAddingTrack(null)} />
 
@@ -255,8 +305,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  content: {
-    flex: 1,
+  contentContainer: {
+    flexGrow: 1,
     paddingHorizontal: SIZES.lg,
     justifyContent: 'space-between',
   },
@@ -264,7 +314,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SIZES.lg,
+    marginBottom: SIZES.md,
   },
   headerIcon: {
     padding: SIZES.xs,
@@ -285,8 +335,8 @@ const styles = StyleSheet.create({
     color: COLORS.text.primary,
   },
   artworkContainer: {
-    width: width - SIZES.lg * 2,
-    height: width - SIZES.lg * 2,
+    width: artworkSize,
+    height: artworkSize,
     borderRadius: SIZES.radius.md,
     overflow: 'hidden',
     alignSelf: 'center',
@@ -295,7 +345,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.5,
     shadowRadius: 30,
-    marginBottom: SIZES.xl,
+    marginBottom: SIZES.lg,
   },
   artwork: {
     width: '100%',

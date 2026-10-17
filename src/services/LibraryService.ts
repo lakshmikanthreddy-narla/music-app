@@ -36,7 +36,9 @@ export type AppSettings = {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   profile: DEFAULT_PROFILE,
-  resolverEndpoints: [],
+  resolverEndpoints: [
+    { url: 'https://api.piped.private.coffee', kind: 'piped' },
+  ],
   volume: 1,
   preferAudioOnly: true,
   autoplayRelated: true,
@@ -116,9 +118,15 @@ class LibraryServiceImpl {
     this.playlists = Array.isArray(playlists) ? playlists : [];
     this.recents = Array.isArray(recents) ? recents : [];
     const stored = settings ?? {};
+    const endpoints =
+      Array.isArray(stored.resolverEndpoints) && stored.resolverEndpoints.length > 0
+        ? stored.resolverEndpoints
+        : DEFAULT_SETTINGS.resolverEndpoints;
+
     this.settings = {
       ...DEFAULT_SETTINGS,
       ...stored,
+      resolverEndpoints: endpoints,
       // Nested, so merge it explicitly: a shallow spread would drop fields
       // written by an older build.
       profile: { ...DEFAULT_PROFILE, ...(stored.profile ?? {}) },

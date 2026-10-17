@@ -50,9 +50,7 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
   if (!track) return null;
 
   return (
-    <TouchableOpacity 
-      activeOpacity={0.9} 
-      onPress={onPress}
+    <View 
       style={[
         styles.positionContainer, 
         { bottom: tabBarHeight } // Flush with the tab bar: no gap for content to show through
@@ -60,18 +58,32 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
     >
       <View style={[styles.container, SHADOWS.glass]}>
         <View style={styles.content}>
-          <Image source={{ uri: track.albumImageUrl }} style={styles.image} />
-          
-          <View style={styles.infoContainer}>
-            <Text style={styles.title} numberOfLines={1}>{track.title}</Text>
-            <Text style={styles.artist} numberOfLines={1}>{track.artist.name}</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.infoTouchArea}
+            activeOpacity={0.8}
+            onPress={onPress}
+          >
+            <Image source={{ uri: track.albumImageUrl }} style={styles.image} />
+            
+            <View style={styles.infoContainer}>
+              <Text style={styles.title} numberOfLines={1}>{track.title}</Text>
+              <Text style={styles.artist} numberOfLines={1}>{track.artist.name}</Text>
+            </View>
+          </TouchableOpacity>
 
           <View style={styles.controls}>
-            <TouchableOpacity style={styles.iconButton} onPress={() => setShowSource(true)}>
+            <TouchableOpacity 
+              style={styles.iconButton} 
+              onPress={() => setShowSource(true)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
                <MonitorSpeaker color={COLORS.text.secondary} size={20} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.playButton} onPress={onPlayPause}>
+            <TouchableOpacity 
+              style={styles.playButton} 
+              onPress={onPlayPause}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
               {isLoading ? (
                 <ActivityIndicator size="small" color={COLORS.text.primary} />
               ) : isPlaying ? (
@@ -88,7 +100,7 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
       </View>
 
       <PlaybackSourceSheet visible={showSource} onClose={() => setShowSource(false)} />
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -110,6 +122,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 8,
+  },
+  infoTouchArea: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   image: {
     width: 40,

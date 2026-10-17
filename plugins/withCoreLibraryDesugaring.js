@@ -11,7 +11,7 @@ const { withAppBuildGradle } = require('expo/config-plugins');
  * edit -- otherwise `npx expo prebuild --clean` would silently drop it.
  */
 
-const DESUGAR_JDK_LIBS = 'com.android.tools:desugar_jdk_libs:2.1.5';
+const DESUGAR_JDK_LIBS = 'com.android.tools:desugar_jdk_libs_nio:2.1.5';
 
 function withCompileOptions(contents) {
   if (contents.includes('coreLibraryDesugaringEnabled')) return contents;
@@ -23,7 +23,14 @@ function withCompileOptions(contents) {
 }
 
 function withDesugarDependency(contents) {
-  if (contents.includes('desugar_jdk_libs')) return contents;
+  if (contents.includes(DESUGAR_JDK_LIBS)) return contents;
+
+  if (/coreLibraryDesugaring\s+['"][^'"]*desugar_jdk_libs[^'"]*['"]/.test(contents)) {
+    return contents.replace(
+      /coreLibraryDesugaring\s+['"][^'"]*desugar_jdk_libs[^'"]*['"]/,
+      `coreLibraryDesugaring "${DESUGAR_JDK_LIBS}"`
+    );
+  }
 
   return contents.replace(
     /^dependencies\s*\{/m,
