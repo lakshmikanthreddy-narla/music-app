@@ -130,9 +130,9 @@ export default function SearchScreen() {
       Keyboard.dismiss();
       setExpandingId(id);
       try {
-        const page = await MusicService.getArtist(browseId);
-        if (page.tracks.length) {
-          playTrack(page.tracks[0], { tracks: page.tracks, label: name });
+        const tracks = await MusicService.getArtistTracks(browseId);
+        if (tracks.length) {
+          playTrack(tracks[0], { tracks, label: name });
         }
       } catch {
         // Silent

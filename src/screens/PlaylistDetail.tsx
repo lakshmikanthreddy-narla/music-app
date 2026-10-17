@@ -92,7 +92,7 @@ export default function PlaylistDetailScreen() {
   if (!playlist) {
     return (
       <View style={[styles.container, { paddingTop: insets.top + SIZES.lg }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.circleNavButton}>
           <ChevronLeft color="#FFFFFF" size={26} />
         </TouchableOpacity>
         <GlassCard intensity={20} style={styles.emptyCard}>

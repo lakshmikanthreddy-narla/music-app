@@ -157,7 +157,7 @@ export default function SettingsScreen() {
           <TouchableOpacity
             style={styles.libCard}
             activeOpacity={0.82}
-            onPress={() => navigation.navigate('Playlist' as never, { playlistId: 'liked' } as never)}
+            onPress={() => (navigation.navigate as any)('Playlist', { playlistId: 'liked' })}
           >
             <LinearGradient
               colors={['#6B21A8', '#3B0764']}

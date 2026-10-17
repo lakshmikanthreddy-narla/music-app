@@ -41,6 +41,13 @@ export const AddToPlaylistSheet: React.FC<Props> = ({ track, onClose }) => {
   } = useLibrary();
   const { playNext } = usePlayer();
 
+  const close = useCallback(() => {
+    Keyboard.dismiss();
+    setCreating(false);
+    setNewName('');
+    onClose();
+  }, [onClose]);
+
   const handlePlayNext = useCallback(() => {
     if (!track) return;
     playNext(track);
@@ -77,12 +84,6 @@ export const AddToPlaylistSheet: React.FC<Props> = ({ track, onClose }) => {
     [playlists]
   );
 
-  const close = useCallback(() => {
-    Keyboard.dismiss();
-    setCreating(false);
-    setNewName('');
-    onClose();
-  }, [onClose]);
 
   /** Tapping a playlist toggles membership: add if absent, remove if present. */
   const toggleIn = useCallback(

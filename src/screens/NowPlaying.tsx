@@ -253,9 +253,7 @@ export default function NowPlayingScreen() {
         {showLyrics && (
           <View style={styles.lyricsCardContainer}>
             <LyricsCard
-              title={currentTrack.title}
-              artist={currentTrack.artist.name}
-              duration={currentTrack.duration}
+              track={currentTrack}
               onSeek={seekTo}
             />
           </View>
@@ -275,7 +273,7 @@ export default function NowPlayingScreen() {
                 <TouchableOpacity
                   key={`${t.id}-${idx}`}
                   style={styles.queueItem}
-                  onPress={() => jumpTo(idx)}
+                  onPress={() => jumpTo(t.id)}
                 >
                   <Image source={{ uri: t.albumImageUrl }} style={styles.queueThumb} />
                   <View style={styles.queueInfo}>
@@ -283,7 +281,7 @@ export default function NowPlayingScreen() {
                     <Text style={styles.queueTrackArtist} numberOfLines={1}>{t.artist.name}</Text>
                   </View>
                   <TouchableOpacity
-                    onPress={() => removeFromQueue(idx)}
+                    onPress={() => removeFromQueue(t.id)}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <X color="#6B7C96" size={16} />
