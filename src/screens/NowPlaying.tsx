@@ -94,17 +94,39 @@ interface DiscProgressLayerProps {
 const DiscProgressLayer: React.FC<DiscProgressLayerProps> = React.memo(
   ({ cx, cy, rProg, trackDuration, onSeek }) => {
     const { position, duration } = useProgress();
-    const effectiveDuration = duration || trackDuration || 0;
+    const effectiveDuration = duration > 0 ? duration : trackDuration > 0 ? trackDuration : 0;
+    const isDisabled = effectiveDuration <= 0;
 
     const [dragProgress, setDragProgress] = useState<number | null>(null);
-    const isDraggingRef = useRef(false);
+    const [previewPos, setPreviewPos] = useState<number | null>(null);
+    const [isPressed, setIsPressed] = useState(false);
 
-    const activeProgress =
-      dragProgress !== null
-        ? dragProgress
-        : effectiveDuration > 0
-        ? Math.min(1, Math.max(0, position / effectiveDuration))
-        : 0;
+    const isDraggingRef = useRef(false);
+    const dragProgressRef = useRef<number | null>(null);
+    const isSeekingRef = useRef(false);
+    const seekTargetRef = useRef(0);
+    const seekReleaseTimeRef = useRef(0);
+    const lastTimeUpdateRef = useRef(0);
+    const rafRef = useRef<number | null>(null);
+
+    // If seeking, check if player has caught up to within 1s or if 600ms has elapsed
+    if (isSeekingRef.current) {
+      if (
+        Math.abs(position - seekTargetRef.current) < 1.0 ||
+        Date.now() - seekReleaseTimeRef.current > 600
+      ) {
+        isSeekingRef.current = false;
+      }
+    }
+
+    let activeProgress = 0;
+    if (dragProgress !== null) {
+      activeProgress = dragProgress;
+    } else if (isSeekingRef.current && effectiveDuration > 0) {
+      activeProgress = Math.min(1, Math.max(0, seekTargetRef.current / effectiveDuration));
+    } else if (effectiveDuration > 0) {
+      activeProgress = Math.min(1, Math.max(0, position / effectiveDuration));
+    }
 
     // Angle span from -61 to +61 degrees (122 degrees total)
     const currentAngleDeg = -61 + 122 * activeProgress;
@@ -116,93 +138,165 @@ const DiscProgressLayer: React.FC<DiscProgressLayerProps> = React.memo(
         ? describeArc(cx, cy, rProg, -61, currentAngleDeg)
         : '';
 
-    // Drag / Touch responder along the progress arc
-    const panResponder = useRef(
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (evt) => {
-          isDraggingRef.current = true;
-          const { locationX, locationY } = evt.nativeEvent;
-          // Calculate angle relative to (cx, cy)
-          const dx = locationX - cx;
-          const dy = cy - locationY;
-          let deg = Math.atan2(dx, dy) * (180 / Math.PI);
-          deg = Math.max(-61, Math.min(61, deg));
-          const prog = (deg - -61) / 122;
-          setDragProgress(prog);
-        },
-        onPanResponderMove: (evt) => {
-          const { locationX, locationY } = evt.nativeEvent;
-          const dx = locationX - cx;
-          const dy = cy - locationY;
-          let deg = Math.atan2(dx, dy) * (180 / Math.PI);
-          deg = Math.max(-61, Math.min(61, deg));
-          const prog = (deg - -61) / 122;
-          setDragProgress(prog);
-        },
-        onPanResponderRelease: () => {
-          isDraggingRef.current = false;
-          setDragProgress((latest) => {
-            if (latest !== null && effectiveDuration > 0) {
-              onSeek(latest * effectiveDuration);
-            }
-            return null;
-          });
-        },
-        onPanResponderTerminate: () => {
-          isDraggingRef.current = false;
-          setDragProgress(null);
-        },
-      })
-    ).current;
+    const computeProgressFromTouch = useCallback(
+      (pageX: number, pageY: number) => {
+        const dx = pageX - cx;
+        const dy = cy - pageY;
+        let deg = Math.atan2(dx, dy) * (180 / Math.PI);
+        deg = Math.max(-61, Math.min(61, deg));
+        return (deg - -61) / 122;
+      },
+      [cx, cy]
+    );
 
-    const displayPos =
-      dragProgress !== null
-        ? dragProgress * effectiveDuration
-        : position;
+    const isTouchOnArc = useCallback(
+      (pageX: number, pageY: number) => {
+        if (effectiveDuration <= 0) return false;
+        const dx = pageX - cx;
+        const dy = cy - pageY;
+        if (dy <= 0) return false;
+        const dist = Math.hypot(dx, dy);
+        if (dist < rProg - 28 || dist > rProg + 28) return false;
+        const deg = Math.atan2(dx, dy) * (180 / Math.PI);
+        return deg >= -65 && deg <= 65;
+      },
+      [cx, cy, rProg, effectiveDuration]
+    );
+
+    const panResponder = useMemo(
+      () =>
+        PanResponder.create({
+          onStartShouldSetPanResponder: (evt) => {
+            return isTouchOnArc(evt.nativeEvent.pageX, evt.nativeEvent.pageY);
+          },
+          onMoveShouldSetPanResponder: (evt) => {
+            return isTouchOnArc(evt.nativeEvent.pageX, evt.nativeEvent.pageY);
+          },
+          onPanResponderTerminationRequest: () => false,
+          onPanResponderGrant: (evt) => {
+            isDraggingRef.current = true;
+            setIsPressed(true);
+            const prog = computeProgressFromTouch(
+              evt.nativeEvent.pageX,
+              evt.nativeEvent.pageY
+            );
+            dragProgressRef.current = prog;
+            setDragProgress(prog);
+            setPreviewPos(prog * effectiveDuration);
+            lastTimeUpdateRef.current = Date.now();
+          },
+          onPanResponderMove: (evt) => {
+            if (!isDraggingRef.current) return;
+            const prog = computeProgressFromTouch(
+              evt.nativeEvent.pageX,
+              evt.nativeEvent.pageY
+            );
+            dragProgressRef.current = prog;
+
+            if (rafRef.current) cancelAnimationFrame(rafRef.current);
+            rafRef.current = requestAnimationFrame(() => {
+              setDragProgress(prog);
+            });
+
+            const now = Date.now();
+            if (now - lastTimeUpdateRef.current >= 45) {
+              lastTimeUpdateRef.current = now;
+              setPreviewPos(prog * effectiveDuration);
+            }
+          },
+          onPanResponderRelease: (evt) => {
+            isDraggingRef.current = false;
+            setIsPressed(false);
+            if (rafRef.current) cancelAnimationFrame(rafRef.current);
+
+            const finalProg =
+              dragProgressRef.current ??
+              computeProgressFromTouch(
+                evt.nativeEvent.pageX,
+                evt.nativeEvent.pageY
+              );
+
+            if (effectiveDuration > 0) {
+              const targetSeconds = finalProg * effectiveDuration;
+              seekTargetRef.current = targetSeconds;
+              isSeekingRef.current = true;
+              seekReleaseTimeRef.current = Date.now();
+              onSeek(targetSeconds);
+            }
+            dragProgressRef.current = null;
+            setDragProgress(null);
+            setPreviewPos(null);
+          },
+          onPanResponderTerminate: () => {
+            isDraggingRef.current = false;
+            setIsPressed(false);
+            if (rafRef.current) cancelAnimationFrame(rafRef.current);
+            dragProgressRef.current = null;
+            setDragProgress(null);
+            setPreviewPos(null);
+          },
+        }),
+      [isTouchOnArc, computeProgressFromTouch, effectiveDuration, onSeek]
+    );
+
+    let displayPos = position;
+    if (previewPos !== null) {
+      displayPos = previewPos;
+    } else if (dragProgress !== null) {
+      displayPos = dragProgress * effectiveDuration;
+    } else if (isSeekingRef.current) {
+      displayPos = seekTargetRef.current;
+    }
 
     return (
-      <>
-        {/* Active Played Progress Arc */}
-        {Boolean(activeArcD) && (
-          <Path
-            d={activeArcD}
-            stroke="#FFFFFF"
-            strokeWidth={3}
-            strokeLinecap="round"
-            fill="none"
+      <View style={[StyleSheet.absoluteFill, { zIndex: 20 }]} pointerEvents="box-none">
+        {/* SVG Active Arc & Knob */}
+        <Svg
+          width={SCREEN_WIDTH}
+          height={SCREEN_HEIGHT}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        >
+          {Boolean(activeArcD) && (
+            <Path
+              d={activeArcD}
+              stroke="#FFFFFF"
+              strokeWidth={3}
+              strokeLinecap="round"
+              fill="none"
+            />
+          )}
+
+          {/* Knob with faint glow (expands while pressed) */}
+          <Circle
+            cx={knob.x}
+            cy={knob.y}
+            r={isPressed ? 14 : 11}
+            fill={isDisabled ? 'transparent' : 'rgba(255, 255, 255, 0.22)'}
           />
-        )}
+          {/* Knob core (7 to 10 pt while pressed, dimmed when disabled) */}
+          <Circle
+            cx={knob.x}
+            cy={knob.y}
+            r={isPressed ? 10 : 7}
+            fill={isDisabled ? 'rgba(255, 255, 255, 0.3)' : '#FFFFFF'}
+          />
+        </Svg>
 
-        {/* Knob with faint glow */}
-        <Circle cx={knob.x} cy={knob.y} r={11} fill="rgba(255, 255, 255, 0.22)" />
-        <Circle cx={knob.x} cy={knob.y} r={7} fill="#FFFFFF" />
-
-        {/* Time Text: 0:46 / 3:18 centered horizontally at 0.27 W above C */}
+        {/* Time Text: centered horizontally at 0.27 W above C */}
         <Text
           style={[
             styles.timeText,
             { top: cy - SCREEN_WIDTH * 0.27 - 10, left: 0, right: 0 },
           ]}
+          pointerEvents="none"
         >
           {formatTime(displayPos)} / {formatTime(effectiveDuration)}
         </Text>
 
-        {/* Touch & Drag zone over the arc */}
-        <View
-          style={[
-            styles.panHitArea,
-            {
-              left: cx - rProg - 20,
-              top: cy - rProg - 20,
-              width: (rProg + 20) * 2,
-              height: rProg + 40,
-            },
-          ]}
-          {...panResponder.panHandlers}
-        />
-      </>
+        {/* Arc Drag / Touch gesture detector */}
+        <View style={StyleSheet.absoluteFill} {...panResponder.panHandlers} />
+      </View>
     );
   }
 );
@@ -554,18 +648,18 @@ export default function NowPlayingScreen() {
 
         {/* Play Button White Circle: radius 0.12 W (~47 pt), fill #FCFCFC */}
         <Circle cx={CX} cy={CY} r={R_PLAY_BUTTON_WHITE} fill="#FCFCFC" />
-
-        {/* Isolated Active Progress Arc, Knob, and Time Text */}
-        <DiscProgressLayer
-          cx={CX}
-          cy={CY}
-          rProg={R_PROG}
-          trackDuration={currentTrack?.duration ?? 0}
-          onSeek={seekTo}
-        />
       </Svg>
 
-      {/* 4. Interactive Controls Overlay */}
+      {/* 4. Isolated Disc Progress, Knob, Time Text, and Arc Drag Gesture */}
+      <DiscProgressLayer
+        cx={CX}
+        cy={CY}
+        rProg={R_PROG}
+        trackDuration={currentTrack?.duration ?? 0}
+        onSeek={seekTo}
+      />
+
+      {/* 5. Interactive Controls Overlay */}
       {/* Heart button: centered horizontally at 0.37 W above C */}
       <View style={[styles.heartWrap, { top: Y_HEART - 18, left: CX - 22 }]}>
         <TouchableOpacity

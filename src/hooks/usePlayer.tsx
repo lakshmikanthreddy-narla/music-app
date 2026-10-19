@@ -134,6 +134,8 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const historyWrittenFor = useRef<number | null>(null);
   const statsPlayLoggedFor = useRef<number | null>(null);
   const actualPlayedSecondsRef = useRef(0);
+  /** Debounce guard for track navigation to prevent rapid skips. */
+  const lastNavTime = useRef(0);
 
   const bumpQueue = useCallback(() => setQueueVersion((v) => v + 1), []);
 
@@ -262,6 +264,14 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     playbackEngine.on('onError', (e) => {
       setIsLoading(false);
       setError(messageFor(e instanceof AppError ? e : toAppError(e, 'playback_failed')));
+    });
+
+    playbackEngine.on('onRemoteNext', () => {
+      nextRef.current();
+    });
+
+    playbackEngine.on('onRemotePrevious', () => {
+      previousRef.current();
     });
 
     return () => {
@@ -467,6 +477,10 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [bumpQueue, currentTrack, loadCurrent, status.isPlaying]);
 
   const next = useCallback(() => {
+    const now = Date.now();
+    if (now - lastNavTime.current < 300) return;
+    lastNavTime.current = now;
+
     const nextTrack = queueRef.current.next(false);
     bumpQueue();
     persistQueue();
@@ -479,6 +493,10 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [bumpQueue, extendWithRelated, loadCurrent, persistQueue]);
 
   const previous = useCallback(() => {
+    const now = Date.now();
+    if (now - lastNavTime.current < 300) return;
+    lastNavTime.current = now;
+
     // Standard behaviour: restart the track if we are more than 3s in.
     if (statusRef.current.position > 3) {
       void playbackEngine.seekTo(0);
@@ -490,6 +508,11 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     persistQueue();
     void loadCurrent({ autoPlay: true });
   }, [bumpQueue, loadCurrent, persistQueue]);
+
+  const nextRef = useRef(next);
+  nextRef.current = next;
+  const previousRef = useRef(previous);
+  previousRef.current = previous;
 
   const seekTo = useCallback((seconds: number) => {
     void playbackEngine.seekTo(seconds);
