@@ -20,6 +20,7 @@ import { GlassCard } from '../components/common/GlassCard';
 import { TrackRow } from '../components/lists/TrackRow';
 import { AddToPlaylistSheet } from '../components/lists/AddToPlaylistSheet';
 import { MiniPlayer } from '../components/player/MiniPlayer';
+import { MultiSelectHeader, MultiSelectBottomBar } from '../components/lists/MultiSelectBar';
 import { StatusBarScrim } from '../components/common/StatusBarScrim';
 import { BROWSE_CATEGORIES } from '../data/catalog';
 import { SearchFilter, Track } from '../core/types';
@@ -66,9 +67,45 @@ export default function SearchScreen() {
     hasResults,
   } = useSearch();
 
-  const { playTrack, currentTrack, isPlaying, togglePlayPause } = usePlayer();
+  const { playTrack, addToQueue, currentTrack, isPlaying, togglePlayPause } = usePlayer();
   const [expandingId, setExpandingId] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
+  const [selectedTrackIds, setSelectedTrackIds] = useState<Set<string>>(new Set());
+  const isSelectionMode = selectedTrackIds.size > 0;
+
+  const handleToggleSelect = useCallback((track: Track) => {
+    setSelectedTrackIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(track.id)) next.delete(track.id);
+      else next.add(track.id);
+      return next;
+    });
+  }, []);
+
+  const handleLongPress = useCallback((track: Track) => {
+    setSelectedTrackIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(track.id)) next.delete(track.id);
+      else next.add(track.id);
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    setSelectedTrackIds(new Set(results.tracks.map((t) => t.id)));
+  }, [results.tracks]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedTrackIds(new Set());
+  }, []);
+
+  const handleAddSelectedToQueue = useCallback(() => {
+    const selected = results.tracks.filter((t) => selectedTrackIds.has(t.id));
+    if (selected.length) {
+      addToQueue(selected);
+    }
+    setSelectedTrackIds(new Set());
+  }, [addToQueue, selectedTrackIds, results.tracks]);
 
   const handleVoiceSearch = useCallback(async () => {
     Keyboard.dismiss();
@@ -206,11 +243,22 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.container}>
+      {isSelectionMode && (
+        <View style={{ paddingTop: insets.top, backgroundColor: '#0D0D0D', zIndex: 10 }}>
+          <MultiSelectHeader
+            selectedCount={selectedTrackIds.size}
+            onClose={handleClearSelection}
+            onSelectAll={handleSelectAll}
+            onClear={handleClearSelection}
+            isAllSelected={selectedTrackIds.size === results.tracks.length && results.tracks.length > 0}
+          />
+        </View>
+      )}
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + SIZES.md, paddingBottom: SIZES.bottomInset + insets.bottom },
+          { paddingTop: isSelectionMode ? SIZES.sm : insets.top + SIZES.md, paddingBottom: SIZES.bottomInset + insets.bottom },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -331,7 +379,11 @@ export default function SearchScreen() {
                       track={track}
                       onPress={onPlayTrack}
                       onMorePress={setAddingTrack}
+                      onLongPress={handleLongPress}
                       isPlaying={currentTrack?.id === track.id && isPlaying}
+                      isSelectionMode={isSelectionMode}
+                      isSelected={selectedTrackIds.has(track.id)}
+                      onToggleSelect={handleToggleSelect}
                     />
                   ))}
                 </View>
@@ -393,13 +445,21 @@ export default function SearchScreen() {
 
       <AddToPlaylistSheet track={addingTrack} onClose={() => setAddingTrack(null)} />
 
-      {currentTrack && (
-        <MiniPlayer
-          track={currentTrack}
-          isPlaying={isPlaying}
-          onPlayPause={togglePlayPause}
-          onPress={() => navigation.navigate('NowPlaying' as never)}
+      {isSelectionMode ? (
+        <MultiSelectBottomBar
+          selectedCount={selectedTrackIds.size}
+          onAddToQueue={handleAddSelectedToQueue}
+          bottomOffset={Math.max(12, insets.bottom + 8) + 68 + 10}
         />
+      ) : (
+        currentTrack && (
+          <MiniPlayer
+            track={currentTrack}
+            isPlaying={isPlaying}
+            onPlayPause={togglePlayPause}
+            onPress={() => navigation.navigate('NowPlaying' as never)}
+          />
+        )
       )}
     </View>
   );

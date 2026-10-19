@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { MoreHorizontal } from 'lucide-react-native';
+import { MoreHorizontal, Check } from 'lucide-react-native';
 import { Track } from '../../core/types';
 import { COLORS, SIZES, FONTS } from '../../constants/theme';
 
@@ -19,6 +19,10 @@ interface TrackRowProps {
   /** Shown while the row's target is being expanded or resolved. */
   isLoading?: boolean;
   onMorePress?: (track: Track) => void;
+  onLongPress?: (track: Track) => void;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (track: Track) => void;
 }
 
 const TrackRowComponent: React.FC<TrackRowProps> = ({
@@ -27,8 +31,25 @@ const TrackRowComponent: React.FC<TrackRowProps> = ({
   isPlaying,
   isLoading,
   onMorePress,
+  onLongPress,
+  isSelectionMode = false,
+  isSelected = false,
+  onToggleSelect,
 }) => {
-  const handlePress = useCallback(() => onPress(track), [onPress, track]);
+  const handlePress = useCallback(() => {
+    if (isSelectionMode) {
+      onToggleSelect?.(track);
+    } else {
+      onPress(track);
+    }
+  }, [isSelectionMode, onToggleSelect, onPress, track]);
+
+  const handleLongPress = useCallback(() => {
+    if (onLongPress) {
+      onLongPress(track);
+    }
+  }, [onLongPress, track]);
+
   const handleMorePress = useCallback(
     () => onMorePress?.(track),
     [onMorePress, track]
@@ -36,10 +57,20 @@ const TrackRowComponent: React.FC<TrackRowProps> = ({
 
   return (
     <TouchableOpacity
-      style={styles.container}
+      style={[styles.container, isSelected && styles.selectedContainer]}
       activeOpacity={0.7}
       onPress={handlePress}
+      onLongPress={handleLongPress}
+      delayLongPress={300}
     >
+      {isSelectionMode && (
+        <View style={styles.checkboxWrapper}>
+          <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+            {isSelected && <Check color="#000000" size={13} strokeWidth={3} />}
+          </View>
+        </View>
+      )}
+
       <Image source={{ uri: track.albumImageUrl }} style={styles.image} />
 
       <View style={styles.infoContainer}>
@@ -51,14 +82,16 @@ const TrackRowComponent: React.FC<TrackRowProps> = ({
         </Text>
       </View>
 
-      {isLoading ? (
-        <View style={styles.moreButton}>
-          <ActivityIndicator size="small" color={COLORS.text.secondary} />
-        </View>
-      ) : (
-        <TouchableOpacity style={styles.moreButton} onPress={handleMorePress}>
-          <MoreHorizontal color={COLORS.text.primary} size={20} />
-        </TouchableOpacity>
+      {!isSelectionMode && (
+        isLoading ? (
+          <View style={styles.moreButton}>
+            <ActivityIndicator size="small" color={COLORS.text.secondary} />
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.moreButton} onPress={handleMorePress}>
+            <MoreHorizontal color={COLORS.text.primary} size={20} />
+          </TouchableOpacity>
+        )
       )}
     </TouchableOpacity>
   );
@@ -107,5 +140,26 @@ const styles = StyleSheet.create({
   },
   moreButton: {
     padding: SIZES.sm,
-  }
+  },
+  selectedContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  checkboxWrapper: {
+    marginRight: SIZES.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: '#FCFCFC',
+    borderColor: '#FCFCFC',
+  },
 });

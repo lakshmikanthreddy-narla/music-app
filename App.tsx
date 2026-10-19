@@ -7,6 +7,7 @@ import { PlayerProvider } from './src/hooks/usePlayer';
 import { LibraryProvider } from './src/hooks/useLibrary';
 import { COLORS } from './src/constants/theme';
 import { NavigationBar } from 'expo-navigation-bar';
+import { GlobalToast } from './src/components/common/GlobalToast';
 import { getPlatformInfo, isNoteNativeAvailable } from './modules/note-native';
 
 export default function App() {
@@ -42,6 +43,7 @@ export default function App() {
               <RootNavigator />
               <StatusBar style="light" />
               {Platform.OS === 'android' && <NavigationBar style="dark" />}
+              <GlobalToast />
             </View>
           </View>
         </PlayerProvider>

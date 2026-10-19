@@ -16,6 +16,7 @@ import { COLORS, SIZES, FONTS } from '../constants/theme';
 import { TrackRow } from '../components/lists/TrackRow';
 import { AddToPlaylistSheet } from '../components/lists/AddToPlaylistSheet';
 import { MiniPlayer } from '../components/player/MiniPlayer';
+import { MultiSelectHeader, MultiSelectBottomBar } from '../components/lists/MultiSelectBar';
 import { GlassCard } from '../components/common/GlassCard';
 import { Track } from '../core/types';
 import { usePlayer } from '../hooks/usePlayer';
@@ -45,6 +46,8 @@ export default function PlaylistDetailScreen() {
   } = usePlayer();
 
   const [addingTrack, setAddingTrack] = useState<Track | null>(null);
+  const [selectedTrackIds, setSelectedTrackIds] = useState<Set<string>>(new Set());
+  const isSelectionMode = selectedTrackIds.size > 0;
 
   const playlist = useMemo(
     () => (playlistId === 'liked' ? likedPlaylist : playlists.find((p) => p.id === playlistId)),
@@ -53,6 +56,40 @@ export default function PlaylistDetailScreen() {
 
   const tracks = playlist?.tracks ?? [];
   const isPlayingThisPlaylist = currentTrack && tracks.some((t) => t.id === currentTrack.id) && isPlaying;
+
+  const handleToggleSelect = useCallback((track: Track) => {
+    setSelectedTrackIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(track.id)) next.delete(track.id);
+      else next.add(track.id);
+      return next;
+    });
+  }, []);
+
+  const handleLongPress = useCallback((track: Track) => {
+    setSelectedTrackIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(track.id)) next.delete(track.id);
+      else next.add(track.id);
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    setSelectedTrackIds(new Set(tracks.map((t) => t.id)));
+  }, [tracks]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedTrackIds(new Set());
+  }, []);
+
+  const handleAddSelectedToQueue = useCallback(() => {
+    const selected = tracks.filter((t) => selectedTrackIds.has(t.id));
+    if (selected.length) {
+      addToQueue(selected);
+    }
+    setSelectedTrackIds(new Set());
+  }, [addToQueue, selectedTrackIds, tracks]);
 
   const playFromStart = useCallback(() => {
     if (!tracks.length || !playlist) return;
@@ -75,18 +112,30 @@ export default function PlaylistDetailScreen() {
   const renderItem = useCallback(
     ({ item, index }: { item: Track; index: number }) => (
       <View style={styles.numberedTrackRow}>
-        <Text style={styles.trackIndex}>{index + 1}</Text>
+        {!isSelectionMode && <Text style={styles.trackIndex}>{index + 1}</Text>}
         <View style={styles.trackRowFlex}>
           <TrackRow
             track={item}
             onPress={onTrackPress}
             onMorePress={setAddingTrack}
+            onLongPress={handleLongPress}
             isPlaying={currentTrack?.id === item.id && isPlaying}
+            isSelectionMode={isSelectionMode}
+            isSelected={selectedTrackIds.has(item.id)}
+            onToggleSelect={handleToggleSelect}
           />
         </View>
       </View>
     ),
-    [onTrackPress, currentTrack?.id, isPlaying]
+    [
+      isSelectionMode,
+      selectedTrackIds,
+      onTrackPress,
+      handleLongPress,
+      handleToggleSelect,
+      currentTrack?.id,
+      isPlaying,
+    ]
   );
 
   if (!playlist) {
@@ -256,6 +305,17 @@ export default function PlaylistDetailScreen() {
 
   return (
     <View style={styles.container}>
+      {isSelectionMode && (
+        <View style={{ paddingTop: insets.top, backgroundColor: '#0D0D0D' }}>
+          <MultiSelectHeader
+            selectedCount={selectedTrackIds.size}
+            onClose={handleClearSelection}
+            onSelectAll={handleSelectAll}
+            onClear={handleClearSelection}
+            isAllSelected={selectedTrackIds.size === tracks.length && tracks.length > 0}
+          />
+        </View>
+      )}
 
       <FlatList
         data={tracks}
@@ -272,7 +332,7 @@ export default function PlaylistDetailScreen() {
           </GlassCard>
         }
         contentContainerStyle={{
-          paddingTop: insets.top + SIZES.sm,
+          paddingTop: isSelectionMode ? SIZES.sm : insets.top + SIZES.sm,
           paddingBottom: SIZES.bottomInset + insets.bottom,
         }}
         showsVerticalScrollIndicator={false}
@@ -283,15 +343,22 @@ export default function PlaylistDetailScreen() {
 
       <AddToPlaylistSheet track={addingTrack} onClose={() => setAddingTrack(null)} />
 
-      {currentTrack && (
-        <MiniPlayer
-          track={currentTrack}
-          isPlaying={isPlaying}
-          isLoading={isLoading}
-          onPlayPause={togglePlayPause}
-          onPress={() => navigation.navigate('NowPlaying' as never)}
-          hasTabBar={false}
+      {isSelectionMode ? (
+        <MultiSelectBottomBar
+          selectedCount={selectedTrackIds.size}
+          onAddToQueue={handleAddSelectedToQueue}
         />
+      ) : (
+        currentTrack && (
+          <MiniPlayer
+            track={currentTrack}
+            isPlaying={isPlaying}
+            isLoading={isLoading}
+            onPlayPause={togglePlayPause}
+            onPress={() => navigation.navigate('NowPlaying' as never)}
+            hasTabBar={false}
+          />
+        )
       )}
     </View>
   );

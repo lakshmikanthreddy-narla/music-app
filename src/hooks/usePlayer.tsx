@@ -19,6 +19,7 @@ import { endpointSource } from '../providers/stream/StreamResolver';
 import { LibraryService } from '../services/LibraryService';
 import { MusicService } from '../services/MusicService';
 import { StatsService } from '../services/StatsService';
+import { ToastService } from '../services/ToastService';
 
 type PlayerContextType = {
   // --- the original mock API, unchanged so existing screens keep working ---
@@ -49,8 +50,14 @@ type PlayerContextType = {
   queue: Track[];
   upcoming: Track[];
   queueContext: string;
+  userQueue: Track[];
+  contextUpcoming: Track[];
   addToQueue: (tracks: Track | Track[]) => void;
   playNext: (tracks: Track | Track[]) => void;
+  removeFromUserQueue: (index: number) => void;
+  reorderUserQueue: (from: number, to: number) => void;
+  clearUserQueue: () => void;
+  playQueueItem: (index: number) => void;
   removeFromQueue: (trackId: string) => void;
   reorderQueue: (from: number, to: number) => void;
   clearQueue: () => void;
@@ -523,29 +530,82 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   // ---- queue operations -------------------------------------------------
 
+  const userQueue = useMemo(
+    () => queueRef.current.userQueue,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queueVersion]
+  );
+
+  const contextUpcoming = useMemo(
+    () => queueRef.current.contextUpcoming,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queueVersion]
+  );
+
   const addToQueue = useCallback(
     (tracks: Track | Track[]) => {
-      const wasEmpty = queueRef.current.length === 0;
-      queueRef.current.add(tracks);
+      const incoming = Array.isArray(tracks) ? tracks : [tracks];
+      if (!incoming.length) return;
+
+      const wasPlaying = Boolean(currentTrack || queueRef.current.current);
+      if (!wasPlaying) {
+        const [first, ...rest] = incoming;
+        if (rest.length) queueRef.current.addToUserQueue(rest);
+        bumpQueue();
+        persistQueue();
+        playTrack(first, { tracks: incoming, label: 'Queue' });
+      } else {
+        queueRef.current.addToUserQueue(incoming);
+        bumpQueue();
+        persistQueue();
+      }
+
+      const count = incoming.length;
+      ToastService.show(count === 1 ? 'Added to queue' : `${count} songs added to queue`);
+    },
+    [bumpQueue, currentTrack, persistQueue, playTrack]
+  );
+
+  const removeFromUserQueue = useCallback(
+    (index: number) => {
+      queueRef.current.removeFromUserQueue(index);
       bumpQueue();
       persistQueue();
+    },
+    [bumpQueue, persistQueue]
+  );
 
-      if (wasEmpty) void loadCurrent({ autoPlay: true });
+  const reorderUserQueue = useCallback(
+    (from: number, to: number) => {
+      queueRef.current.reorderUserQueue(from, to);
+      bumpQueue();
+      persistQueue();
+    },
+    [bumpQueue, persistQueue]
+  );
+
+  const clearUserQueue = useCallback(() => {
+    queueRef.current.clearUserQueue();
+    bumpQueue();
+    persistQueue();
+  }, [bumpQueue, persistQueue]);
+
+  const playQueueItem = useCallback(
+    (index: number) => {
+      const track = queueRef.current.playUserQueueIndex(index);
+      if (!track) return;
+      bumpQueue();
+      persistQueue();
+      void loadCurrent({ autoPlay: true });
     },
     [bumpQueue, loadCurrent, persistQueue]
   );
 
   const playNextInQueue = useCallback(
     (tracks: Track | Track[]) => {
-      const wasEmpty = queueRef.current.length === 0;
-      queueRef.current.playNext(tracks);
-      bumpQueue();
-      persistQueue();
-
-      if (wasEmpty) void loadCurrent({ autoPlay: true });
-      else preloader.schedule(queueRef.current.peekNext());
+      addToQueue(tracks);
     },
-    [bumpQueue, loadCurrent, persistQueue]
+    [addToQueue]
   );
 
   const removeFromQueue = useCallback(
@@ -654,8 +714,14 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       queue: queueSnapshot.items,
       upcoming: queueSnapshot.upcoming,
       queueContext: queueSnapshot.context,
+      userQueue,
+      contextUpcoming,
       addToQueue,
       playNext: playNextInQueue,
+      removeFromUserQueue,
+      reorderUserQueue,
+      clearUserQueue,
+      playQueueItem,
       removeFromQueue,
       reorderQueue,
       clearQueue,
@@ -687,8 +753,14 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       next,
       previous,
       queueSnapshot,
+      userQueue,
+      contextUpcoming,
       addToQueue,
       playNextInQueue,
+      removeFromUserQueue,
+      reorderUserQueue,
+      clearUserQueue,
+      playQueueItem,
       removeFromQueue,
       reorderQueue,
       clearQueue,

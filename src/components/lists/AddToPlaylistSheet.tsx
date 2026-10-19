@@ -39,7 +39,7 @@ export const AddToPlaylistSheet: React.FC<Props> = ({ track, onClose }) => {
     toggleLike,
     isLiked,
   } = useLibrary();
-  const { playNext } = usePlayer();
+  const { addToQueue } = usePlayer();
 
   const close = useCallback(() => {
     Keyboard.dismiss();
@@ -48,11 +48,11 @@ export const AddToPlaylistSheet: React.FC<Props> = ({ track, onClose }) => {
     onClose();
   }, [onClose]);
 
-  const handlePlayNext = useCallback(() => {
+  const handleAddToQueue = useCallback(() => {
     if (!track) return;
-    playNext(track);
+    addToQueue(track);
     close();
-  }, [track, playNext, close]);
+  }, [track, addToQueue, close]);
 
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
@@ -140,17 +140,17 @@ export const AddToPlaylistSheet: React.FC<Props> = ({ track, onClose }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Play Next action */}
+        {/* Add to Queue action */}
         <TouchableOpacity
           style={styles.playNextCard}
           activeOpacity={0.7}
-          onPress={handlePlayNext}
+          onPress={handleAddToQueue}
         >
           <View style={styles.playNextIconWrapper}>
             <ListPlus color={COLORS.accent.green} size={22} />
           </View>
           <View style={styles.playNextTextContainer}>
-            <Text style={styles.playNextTitle}>Play Next</Text>
+            <Text style={styles.playNextTitle}>Add to Queue</Text>
             <Text style={styles.playNextSubtitle}>Plays automatically after current song</Text>
           </View>
         </TouchableOpacity>

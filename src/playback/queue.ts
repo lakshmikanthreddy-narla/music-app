@@ -9,6 +9,8 @@ export type QueueSnapshot = {
   repeat: RepeatMode;
   /** Where this queue came from, shown as "PLAYING FROM" in Now Playing. */
   context: string;
+  /** User-added queue that plays in order before returning to context */
+  userQueue?: Track[];
 };
 
 export const EMPTY_QUEUE: QueueSnapshot = {
@@ -17,6 +19,7 @@ export const EMPTY_QUEUE: QueueSnapshot = {
   shuffle: false,
   repeat: 'off',
   context: '',
+  userQueue: [],
 };
 
 /**
@@ -33,6 +36,8 @@ export class Queue {
   private shuffleOn = false;
   private repeatMode: RepeatMode = 'off';
   private contextLabel = '';
+  private userQueueItems: Track[] = [];
+  private activeUserTrack: Track | null = null;
 
   // ---- reads ------------------------------------------------------------
 
@@ -40,12 +45,21 @@ export class Queue {
     return [...this.tracks];
   }
 
-  /** Upcoming tracks in the order they will actually play. */
-  get upcoming(): Track[] {
+  get userQueue(): Track[] {
+    return [...this.userQueueItems];
+  }
+
+  get contextUpcoming(): Track[] {
     return this.order.slice(this.position + 1).map((i) => this.tracks[i]);
   }
 
+  /** Upcoming tracks in the order they will actually play. */
+  get upcoming(): Track[] {
+    return [...this.userQueueItems, ...this.contextUpcoming];
+  }
+
   get current(): Track | null {
+    if (this.activeUserTrack) return this.activeUserTrack;
     const i = this.order[this.position];
     return i === undefined ? null : (this.tracks[i] ?? null);
   }
@@ -72,13 +86,14 @@ export class Queue {
 
   /** True when advancing would run off the end (and repeat is off). */
   get hasNext(): boolean {
+    if (this.userQueueItems.length > 0) return true;
     if (!this.tracks.length) return false;
     if (this.repeatMode !== 'off') return true;
     return this.position < this.order.length - 1;
   }
 
   get hasPrevious(): boolean {
-    return this.tracks.length > 0;
+    return this.activeUserTrack !== null || this.tracks.length > 0;
   }
 
   snapshot(): QueueSnapshot {
@@ -88,6 +103,7 @@ export class Queue {
       shuffle: this.shuffleOn,
       repeat: this.repeatMode,
       context: this.contextLabel,
+      userQueue: [...this.userQueueItems],
     };
   }
 
@@ -96,6 +112,8 @@ export class Queue {
     this.shuffleOn = snapshot.shuffle ?? false;
     this.repeatMode = snapshot.repeat ?? 'off';
     this.contextLabel = snapshot.context ?? '';
+    this.userQueueItems = [...(snapshot.userQueue ?? [])];
+    this.activeUserTrack = null;
 
     this.rebuildOrder();
 
@@ -103,10 +121,45 @@ export class Queue {
     this.position = startAt >= 0 ? this.order.indexOf(startAt) : -1;
   }
 
+  // ---- user queue methods -----------------------------------------------
+
+  addToUserQueue(tracks: Track | Track[]): void {
+    const incoming = Array.isArray(tracks) ? tracks : [tracks];
+    if (!incoming.length) return;
+    this.userQueueItems.push(...incoming);
+  }
+
+  removeFromUserQueue(index: number): void {
+    if (index >= 0 && index < this.userQueueItems.length) {
+      this.userQueueItems.splice(index, 1);
+    }
+  }
+
+  reorderUserQueue(from: number, to: number): void {
+    if (from === to || from < 0 || from >= this.userQueueItems.length) return;
+    const clampedTo = Math.max(0, Math.min(to, this.userQueueItems.length - 1));
+    const [moved] = this.userQueueItems.splice(from, 1);
+    this.userQueueItems.splice(clampedTo, 0, moved);
+  }
+
+  clearUserQueue(): void {
+    this.userQueueItems = [];
+  }
+
+  playUserQueueIndex(index: number): Track | null {
+    if (index < 0 || index >= this.userQueueItems.length) return null;
+    const target = this.userQueueItems[index];
+    // Songs before it are dropped from the queue as required
+    this.userQueueItems = this.userQueueItems.slice(index + 1);
+    this.activeUserTrack = target;
+    return target;
+  }
+
   // ---- writes -----------------------------------------------------------
 
   /** Replace the whole queue and start at `startIndex`. */
   setTracks(tracks: Track[], startIndex = 0, context = ''): void {
+    this.activeUserTrack = null;
     this.tracks = dedupe(tracks);
     this.contextLabel = context;
 
@@ -247,9 +300,31 @@ export class Queue {
    * replays the same track) from the user pressing next (where it does not).
    */
   next(auto = false): Track | null {
-    if (!this.tracks.length) return null;
+    if (auto && this.repeatMode === 'one' && this.current) return this.current;
 
-    if (auto && this.repeatMode === 'one') return this.current;
+    // 1. Play next track from the user-added queue if any
+    if (this.userQueueItems.length > 0) {
+      const nextUser = this.userQueueItems.shift()!;
+      this.activeUserTrack = nextUser;
+      return nextUser;
+    }
+
+    // 2. User queue emptied: if we were playing a user queue track, resume the context
+    if (this.activeUserTrack) {
+      this.activeUserTrack = null;
+      if (this.position < this.order.length - 1) {
+        this.position += 1;
+        return this.current;
+      }
+      if (this.repeatMode === 'all') {
+        this.position = 0;
+        return this.current;
+      }
+      return null;
+    }
+
+    // 3. Normal context playback
+    if (!this.tracks.length) return null;
 
     if (this.position < this.order.length - 1) {
       this.position += 1;
@@ -267,6 +342,12 @@ export class Queue {
   }
 
   previous(): Track | null {
+    // If playing a user queue item, clear it and return to the current context track
+    if (this.activeUserTrack) {
+      this.activeUserTrack = null;
+      return this.current;
+    }
+
     if (!this.tracks.length) return null;
 
     if (this.position > 0) {
@@ -284,6 +365,7 @@ export class Queue {
 
   /** Jump to a specific track by id. */
   jumpTo(trackId: string): Track | null {
+    this.activeUserTrack = null;
     const trackIndex = this.tracks.findIndex((t) => t.id === trackId);
     if (trackIndex < 0) return null;
 
@@ -296,6 +378,9 @@ export class Queue {
 
   /** Peek at what next() would return, without moving. */
   peekNext(): Track | null {
+    if (this.userQueueItems.length > 0) {
+      return this.userQueueItems[0];
+    }
     if (!this.tracks.length) return null;
     if (this.position < this.order.length - 1) {
       return this.tracks[this.order[this.position + 1]] ?? null;
