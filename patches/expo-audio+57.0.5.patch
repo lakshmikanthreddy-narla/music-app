@@ -14,7 +14,7 @@ index c76a9fd..8df3c50 100644
      val body = mapOf(
        "channels" to listOf(
 diff --git a/node_modules/expo-audio/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt b/node_modules/expo-audio/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt
-index 196a5d5..9852e48 100644
+index 196a5d5..5035028 100644
 --- a/node_modules/expo-audio/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt
 +++ b/node_modules/expo-audio/android/src/main/java/expo/modules/audio/service/AudioControlsService.kt
 @@ -88,6 +88,8 @@ class AudioControlsService : MediaSessionService() {
@@ -40,10 +40,20 @@ index 196a5d5..9852e48 100644
    private fun ensureForegroundNotification() {
      val notification = buildNotification() ?: buildPlaceholderNotification()
      try {
-@@ -192,17 +201,15 @@ class AudioControlsService : MediaSessionService() {
-       val compactViewIndices = mutableListOf<Int>()
-       var currentIndex = 0
+@@ -184,53 +193,43 @@ class AudioControlsService : MediaSessionService() {
+       .setContentIntent(buildContentIntent())
+       .setAutoCancel(false)
+       .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
++      .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
  
+-    val style = MediaStyleNotificationHelper.MediaStyle(session)
++    val isPlaying = session.player.isPlaying
+ 
+-    // Older Android system UI expects explicit notification actions for transport controls.
+-    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
+-      val compactViewIndices = mutableListOf<Int>()
+-      var currentIndex = 0
+-
 -      if (currentOptions?.showSeekBackward == true) {
 -        builder.addAction(
 -          NotificationCompat.Action(
@@ -51,25 +61,43 @@ index 196a5d5..9852e48 100644
 -            "Seek Backward",
 -            buildActionPendingIntent(ACTION_SEEK_BACKWARD)
 -          )
-+      builder.addAction(
-+        NotificationCompat.Action(
-+          androidx.media3.session.R.drawable.media3_icon_previous,
-+          "Previous",
-+          buildActionPendingIntent(ACTION_PREVIOUS)
-         )
+-        )
 -        compactViewIndices.add(currentIndex)
 -        currentIndex++
 -      }
++    // Action 0: Previous (|<)
++    builder.addAction(
++      NotificationCompat.Action(
++        androidx.media3.session.R.drawable.media3_notification_seek_to_previous,
++        "Previous",
++        buildActionPendingIntent(ACTION_PREVIOUS)
 +      )
-+      compactViewIndices.add(currentIndex)
-+      currentIndex++
++    )
  
-       builder.addAction(
-         NotificationCompat.Action(
-@@ -218,16 +225,14 @@ class AudioControlsService : MediaSessionService() {
-       compactViewIndices.add(currentIndex)
-       currentIndex++
- 
+-      builder.addAction(
+-        NotificationCompat.Action(
+-          if (session.player.isPlaying) {
+-            androidx.media3.session.R.drawable.media3_icon_pause
+-          } else {
+-            androidx.media3.session.R.drawable.media3_icon_play
+-          },
+-          if (session.player.isPlaying) "Pause" else "Play",
+-          buildActionPendingIntent(if (session.player.isPlaying) ACTION_PAUSE else ACTION_PLAY)
+-        )
++    // Action 1: Play/Pause
++    builder.addAction(
++      NotificationCompat.Action(
++        if (isPlaying) {
++          androidx.media3.session.R.drawable.media3_notification_pause
++        } else {
++          androidx.media3.session.R.drawable.media3_notification_play
++        },
++        if (isPlaying) "Pause" else "Play",
++        buildActionPendingIntent(if (isPlaying) ACTION_PAUSE else ACTION_PLAY)
+       )
+-      compactViewIndices.add(currentIndex)
+-      currentIndex++
+-
 -      if (currentOptions?.showSeekForward == true) {
 -        builder.addAction(
 -          NotificationCompat.Action(
@@ -77,20 +105,28 @@ index 196a5d5..9852e48 100644
 -            "Seek Forward",
 -            buildActionPendingIntent(ACTION_SEEK_FORWARD)
 -          )
-+      builder.addAction(
-+        NotificationCompat.Action(
-+          androidx.media3.session.R.drawable.media3_icon_next,
-+          "Next",
-+          buildActionPendingIntent(ACTION_NEXT)
-         )
+-        )
 -        compactViewIndices.add(currentIndex)
 -      }
-+      )
-+      compactViewIndices.add(currentIndex)
++    )
  
-       style.setShowActionsInCompactView(*compactViewIndices.toIntArray())
-     }
-@@ -240,17 +245,16 @@ class AudioControlsService : MediaSessionService() {
+-      style.setShowActionsInCompactView(*compactViewIndices.toIntArray())
+-    }
++    // Action 2: Next (>|)
++    builder.addAction(
++      NotificationCompat.Action(
++        androidx.media3.session.R.drawable.media3_notification_seek_to_next,
++        "Next",
++        buildActionPendingIntent(ACTION_NEXT)
++      )
++    )
++
++    val style = MediaStyleNotificationHelper.MediaStyle(session)
++      .setShowActionsInCompactView(0, 1, 2)
+ 
+     builder.setStyle(style)
+     return builder.build()
+@@ -240,17 +239,15 @@ class AudioControlsService : MediaSessionService() {
      val session = mediaSession ?: return
      val mediaButtons = mutableListOf<CommandButton>()
  
@@ -111,14 +147,13 @@ index 196a5d5..9852e48 100644
 +        .setDisplayName("Previous")
 +        .setEnabled(true)
 +        .setPlayerCommand(Player.COMMAND_SEEK_TO_PREVIOUS)
-+        .setSessionCommand(SessionCommand(ACTION_PREVIOUS, Bundle.EMPTY))
 +        .setSlots(CommandButton.SLOT_BACK)
 +        .build()
 +    )
  
      // Add play/pause button (always present)
      mediaButtons.add(
-@@ -262,17 +266,16 @@ class AudioControlsService : MediaSessionService() {
+@@ -262,17 +259,15 @@ class AudioControlsService : MediaSessionService() {
          .build()
      )
  
@@ -139,14 +174,13 @@ index 196a5d5..9852e48 100644
 +        .setDisplayName("Next")
 +        .setEnabled(true)
 +        .setPlayerCommand(Player.COMMAND_SEEK_TO_NEXT)
-+        .setSessionCommand(SessionCommand(ACTION_NEXT, Bundle.EMPTY))
 +        .setSlots(CommandButton.SLOT_FORWARD)
 +        .build()
 +    )
  
      session.setCustomLayout(mediaButtons)
      session.setMediaButtonPreferences(mediaButtons)
-@@ -371,7 +374,7 @@ class AudioControlsService : MediaSessionService() {
+@@ -371,9 +366,15 @@ class AudioControlsService : MediaSessionService() {
            updateMetadata(metadata)
          }
          val session = MediaSession.Builder(context, sessionPlayer)
@@ -154,8 +188,16 @@ index 196a5d5..9852e48 100644
 +          .setCallback(AudioMediaSessionCallback(this@AudioControlsService))
            .build()
  
++        val sessionExtras = Bundle().apply {
++          putBoolean("android.media.playback.ALWAYS_RESERVE_SPACE_FOR.ACTION_SKIP_TO_PREVIOUS", true)
++          putBoolean("android.media.playback.ALWAYS_RESERVE_SPACE_FOR.ACTION_SKIP_TO_NEXT", true)
++        }
++        session.setSessionExtras(sessionExtras)
++
          // Replace the basic media session with a session connected to our playback service.
-@@ -452,7 +455,7 @@ class AudioControlsService : MediaSessionService() {
+         player.mediaSession.release()
+         player.mediaSession = session
+@@ -452,9 +453,15 @@ class AudioControlsService : MediaSessionService() {
            updateMetadata(metadata)
          }
          val session = MediaSession.Builder(context, sessionPlayer)
@@ -163,8 +205,16 @@ index 196a5d5..9852e48 100644
 +          .setCallback(AudioMediaSessionCallback(this@AudioControlsService))
            .build()
  
++        val sessionExtras = Bundle().apply {
++          putBoolean("android.media.playback.ALWAYS_RESERVE_SPACE_FOR.ACTION_SKIP_TO_PREVIOUS", true)
++          putBoolean("android.media.playback.ALWAYS_RESERVE_SPACE_FOR.ACTION_SKIP_TO_NEXT", true)
++        }
++        session.setSessionExtras(sessionExtras)
++
          player.mediaSession.release()
-@@ -556,6 +559,8 @@ class AudioControlsService : MediaSessionService() {
+         player.mediaSession = session
+ 
+@@ -556,6 +563,8 @@ class AudioControlsService : MediaSessionService() {
      private const val ACTION_PAUSE = "expo.modules.audio.action.PAUSE"
      private const val ACTION_TOGGLE = "expo.modules.audio.action.TOGGLE"
  
@@ -258,10 +308,10 @@ index 839aaef..3a84efd 100644
          session.player.seekTo(session.player.currentPosition + AudioControlsService.SEEK_INTERVAL_MS)
        }
 diff --git a/node_modules/expo-audio/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt b/node_modules/expo-audio/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
-index 18203a3..e0bd451 100644
+index 18203a3..e10964f 100644
 --- a/node_modules/expo-audio/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
 +++ b/node_modules/expo-audio/android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt
-@@ -48,6 +48,25 @@ internal class MetadataInjectingPlayer(
+@@ -48,6 +48,29 @@ internal class MetadataInjectingPlayer(
        .build()
    }
  
@@ -283,6 +333,10 @@ index 18203a3..e0bd451 100644
 +      .add(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
 +      .build()
 +  }
++
++  override fun hasPreviousMediaItem(): Boolean = true
++
++  override fun hasNextMediaItem(): Boolean = true
 +
    fun updateMetadata(metadata: Metadata?) {
      if (Looper.myLooper() != applicationLooper) {
