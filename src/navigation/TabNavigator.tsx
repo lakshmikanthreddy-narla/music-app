@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Search, Library, User } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 
@@ -12,11 +13,14 @@ import SettingsScreen from '../screens/Settings';
 const Tab = createBottomTabNavigator();
 
 export const TabNavigator = () => {
+  const insets = useSafeAreaInsets();
+  const bottomOffset = Math.max(12, insets.bottom + 8);
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { bottom: bottomOffset }],
         tabBarBackground: () => <View style={styles.tabBarBackground} />,
         tabBarActiveTintColor: COLORS.activeWhite,
         tabBarInactiveTintColor: COLORS.text.secondary,

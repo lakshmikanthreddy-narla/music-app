@@ -136,7 +136,7 @@ export default function LibraryScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + SIZES.md, paddingBottom: SIZES.bottomInset },
+          { paddingTop: insets.top + SIZES.md, paddingBottom: SIZES.bottomInset + insets.bottom },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -256,7 +256,7 @@ export default function LibraryScreen() {
                 <View style={styles.playlistInfo}>
                   <Text style={styles.playlistTitle} numberOfLines={1}>Liked Songs</Text>
                   <Text style={styles.playlistSubtitle} numberOfLines={1}>
-                    Playlist • {likedPlaylist.tracks.length ? `${likedPlaylist.tracks.length} songs` : '543 songs'}
+                    Playlist • {likedPlaylist.tracks.length} {likedPlaylist.tracks.length === 1 ? 'song' : 'songs'}
                   </Text>
                 </View>
                 <ChevronRight color="#FFFFFF" size={20} />

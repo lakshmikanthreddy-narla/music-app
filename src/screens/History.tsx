@@ -120,7 +120,7 @@ export default function HistoryScreen() {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           renderSectionHeader={renderSectionHeader}
-          contentContainerStyle={{ paddingBottom: SIZES.bottomInset }}
+          contentContainerStyle={{ paddingBottom: SIZES.bottomInset + insets.bottom }}
           showsVerticalScrollIndicator={false}
           stickySectionHeadersEnabled={false}
           initialNumToRender={12}
@@ -140,6 +140,7 @@ export default function HistoryScreen() {
           isLoading={isLoading}
           onPlayPause={togglePlayPause}
           onPress={() => navigation.navigate('NowPlaying' as never)}
+          hasTabBar={false}
         />
       )}
     </View>

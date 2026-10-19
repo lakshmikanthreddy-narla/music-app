@@ -37,7 +37,7 @@ const isDurationText = (t: string) => /^\d+:\d{2}(:\d{2})?$/.test(t.trim());
  * YouTube thumbnails carry their size in the URL. Upscale the request so
  * artwork stays sharp in the large Now Playing view.
  */
-export function upscaleThumbnail(url: string | undefined, size = 544): string {
+export function upscaleThumbnail(url: string | undefined, size = 800): string {
   if (!url) return '';
   if (/=w\d+-h\d+/.test(url)) {
     return url.replace(/=w\d+-h\d+/, `=w${size}-h${size}`);
@@ -46,10 +46,10 @@ export function upscaleThumbnail(url: string | undefined, size = 544): string {
     return url.replace(/=s\d+/, `=s${size}`);
   }
   // i.ytimg.com style: /vi/<id>/hqdefault.jpg
-  return url.replace(/\/(default|mqdefault|hqdefault)\.jpg/, '/hqdefault.jpg');
+  return url.replace(/\/(default|mqdefault)\.jpg/, '/hqdefault.jpg');
 }
 
-function pickThumbnail(item: Any, size = 544): string {
+function pickThumbnail(item: Any, size = 800): string {
   const list =
     item?.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails ??
     item?.thumbnailRenderer?.musicThumbnailRenderer?.thumbnail?.thumbnails ??
@@ -196,7 +196,7 @@ export function parseAlbumItem(item: Any): Album | null {
     browseId,
     title,
     artist,
-    coverImageUrl: pickThumbnail(item, 400),
+    coverImageUrl: pickThumbnail(item, 800),
     year,
   };
 }
@@ -217,7 +217,7 @@ export function parseArtistItem(item: Any): ArtistResult | null {
     provider: 'youtube',
     browseId,
     name,
-    imageUrl: pickThumbnail(item, 400),
+    imageUrl: pickThumbnail(item, 800),
     subtitle: subtitle || undefined,
   };
 }

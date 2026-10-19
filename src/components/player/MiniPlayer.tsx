@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, Image, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { Play, Pause, MonitorSpeaker } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Track } from '../../core/types';
 import { useProgress } from '../../hooks/usePlayer';
 import { PlaybackSourceSheet } from './PlaybackSourceSheet';
@@ -12,6 +13,7 @@ interface MiniPlayerProps {
   onPress: () => void;
   onPlayPause: () => void;
   tabBarHeight?: number;
+  hasTabBar?: boolean;
   isLoading?: boolean;
 }
 
@@ -41,19 +43,24 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
   isPlaying, 
   onPress, 
   onPlayPause,
-  tabBarHeight = Platform.OS === 'ios' ? 88 : 68,
+  tabBarHeight,
+  hasTabBar = true,
   isLoading = false
 }) => {
+  const insets = useSafeAreaInsets();
   const [showSource, setShowSource] = useState(false);
 
-
   if (!track) return null;
+
+  // Calculate bottom offset to float above tab bar or safe area
+  const tabBottom = Math.max(12, insets.bottom + 8);
+  const bottomOffset = tabBarHeight ?? (hasTabBar ? (tabBottom + 68 + 8) : tabBottom);
 
   return (
     <View 
       style={[
         styles.positionContainer, 
-        { bottom: tabBarHeight } // Flush with the tab bar: no gap for content to show through
+        { bottom: bottomOffset }
       ]}
     >
       <View style={[styles.container, SHADOWS.glass]}>

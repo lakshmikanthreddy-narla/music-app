@@ -133,7 +133,7 @@ export default function PlaylistDetailScreen() {
           </View>
           <Text style={styles.likedTitle}>Liked Songs</Text>
           <Text style={styles.likedSubtitle}>
-            {tracks.length ? `${tracks.length} songs` : '543 songs'}
+            {tracks.length} {tracks.length === 1 ? 'song' : 'songs'}
           </Text>
 
           {/* Liked Songs Action Row: Shuffle + White Play Button */}
@@ -273,7 +273,7 @@ export default function PlaylistDetailScreen() {
         }
         contentContainerStyle={{
           paddingTop: insets.top + SIZES.sm,
-          paddingBottom: SIZES.bottomInset,
+          paddingBottom: SIZES.bottomInset + insets.bottom,
         }}
         showsVerticalScrollIndicator={false}
         initialNumToRender={12}
@@ -290,6 +290,7 @@ export default function PlaylistDetailScreen() {
           isLoading={isLoading}
           onPlayPause={togglePlayPause}
           onPress={() => navigation.navigate('NowPlaying' as never)}
+          hasTabBar={false}
         />
       )}
     </View>

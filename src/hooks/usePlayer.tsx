@@ -18,6 +18,7 @@ import { preloader } from '../playback/preload';
 import { endpointSource } from '../providers/stream/StreamResolver';
 import { LibraryService } from '../services/LibraryService';
 import { MusicService } from '../services/MusicService';
+import { StatsService } from '../services/StatsService';
 
 type PlayerContextType = {
   // --- the original mock API, unchanged so existing screens keep working ---
@@ -124,6 +125,8 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const autoSkips = useRef(0);
   /** Load id whose listen has already been written to history. */
   const historyWrittenFor = useRef<number | null>(null);
+  const statsPlayLoggedFor = useRef<number | null>(null);
+  const actualPlayedSecondsRef = useRef(0);
 
   const bumpQueue = useCallback(() => setQueueVersion((v) => v + 1), []);
 
@@ -160,6 +163,8 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
       const preloadedThis = preloader.pending === track.id;
       historyWrittenFor.current = null;
+      statsPlayLoggedFor.current = null;
+      actualPlayedSecondsRef.current = 0;
 
       // Stop warming anything that is no longer next -- but if we were warming
       // THIS track, adopt that request instead of aborting it: resolveStream
@@ -364,10 +369,40 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, [currentTrack, positionSecond, status.duration]);
 
+  // Track real listening seconds and 30-second song play rules for profile stats
+  useEffect(() => {
+    if (!status.isPlaying || status.isBuffering || isLoading || !currentTrack) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      // 1. Add real played seconds to daily log
+      StatsService.addListeningSeconds(1);
+      actualPlayedSecondsRef.current += 1;
+
+      // 2. 30-second rule (or 50% for shorter tracks)
+      const trackDuration = status.duration || currentTrack.duration || 0;
+      const threshold = trackDuration > 0 ? Math.min(30, trackDuration * 0.5) : 30;
+
+      if (
+        actualPlayedSecondsRef.current >= threshold &&
+        statsPlayLoggedFor.current !== loadId.current
+      ) {
+        statsPlayLoggedFor.current = loadId.current;
+        StatsService.recordSongPlay(currentTrack);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [status.isPlaying, status.isBuffering, isLoading, currentTrack, status.duration]);
+
   // Flush pending writes when the app goes to the background or the tab closes.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'background' || state === 'inactive') void flushWrites();
+      if (state === 'background' || state === 'inactive') {
+        void flushWrites();
+        void StatsService.flush();
+      }
     });
 
     let onHide: (() => void) | undefined;

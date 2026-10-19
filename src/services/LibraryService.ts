@@ -14,12 +14,14 @@ export type UserProfile = {
   gender: Gender;
   /** True once the user has been through Get Started. */
   completed: boolean;
+  avatarUri?: string | null;
 };
 
 export const DEFAULT_PROFILE: UserProfile = {
   name: '',
   gender: 'unspecified',
   completed: false,
+  avatarUri: null,
 };
 
 export type AppSettings = {
@@ -395,6 +397,7 @@ class LibraryServiceImpl {
       profile: { ...this.settings.profile, ...patch },
     };
     void writeJson(STORAGE_KEYS.settings, this.settings);
+    this.notifyChanged();
     return this.getProfile();
   }
 

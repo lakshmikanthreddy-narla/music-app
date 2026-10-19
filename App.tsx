@@ -6,9 +6,21 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 import { PlayerProvider } from './src/hooks/usePlayer';
 import { LibraryProvider } from './src/hooks/useLibrary';
 import { COLORS } from './src/constants/theme';
+import { NavigationBar } from 'expo-navigation-bar';
 import { getPlatformInfo, isNoteNativeAvailable } from './modules/note-native';
 
 export default function App() {
+  // Configure system navigation bar for Android (dark background, light buttons)
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      try {
+        NavigationBar.setStyle('dark');
+      } catch (e) {
+        // no-op if unsupported
+      }
+    }
+  }, []);
+
   // Proof-of-connection for the Android native module. Dev-only, no UI impact.
   useEffect(() => {
     if (__DEV__) {
@@ -29,6 +41,7 @@ export default function App() {
             <View style={styles.appContainer}>
               <RootNavigator />
               <StatusBar style="light" />
+              {Platform.OS === 'android' && <NavigationBar style="dark" />}
             </View>
           </View>
         </PlayerProvider>

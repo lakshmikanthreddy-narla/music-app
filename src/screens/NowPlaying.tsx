@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,11 +7,15 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
+  Animated,
+  PanResponder,
+  Modal,
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ChevronDown,
+  MoreHorizontal,
   Heart,
   Play,
   Pause,
@@ -22,29 +26,56 @@ import {
   Shuffle,
   MonitorSpeaker,
   ListMusic,
-  ListPlus,
   X,
-  FileText,
-  MoreHorizontal,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, {
+  Path,
+  Circle,
+  Defs,
+  LinearGradient as SvgGradient,
+  Stop,
+  Text as SvgText,
+  G,
+} from 'react-native-svg';
 import { COLORS, SIZES, FONTS } from '../constants/theme';
 import { PlaybackSourceSheet } from '../components/player/PlaybackSourceSheet';
-import { SeekBar } from '../components/player/SeekBar';
 import { AddToPlaylistSheet } from '../components/lists/AddToPlaylistSheet';
 import { LyricsCard } from '../components/player/LyricsCard';
-import { CdTurntable } from '../components/player/CdTurntable';
 import { Track } from '../core/types';
-import { usePlayer } from '../hooks/usePlayer';
+import { usePlayer, useProgress } from '../hooks/usePlayer';
 import { useLibrary } from '../hooks/useLibrary';
+import { LyricsService, Lyrics } from '../services/LyricsService';
+import { upscaleThumbnail } from '../providers/youtube/parse';
 import { useNavigation } from '@react-navigation/native';
 
-const { width } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Geometry constants for the Target CD-Style Now Playing
+const DISC_RADIUS = SCREEN_WIDTH * 0.72; // ~280 on 390pt width
+const Y_APEX = Math.round(SCREEN_HEIGHT * 0.43); // Apex of the curved disc
+const CX = SCREEN_WIDTH / 2;
+const CY = Y_APEX + DISC_RADIUS;
+
+// Progress arc parameters
+const R_PROGRESS = DISC_RADIUS - 26;
+const ARC_HALF_SPAN = 0.82; // ~47 degrees in radians
+const START_ANGLE = -Math.PI / 2 - ARC_HALF_SPAN;
+const END_ANGLE = -Math.PI / 2 + ARC_HALF_SPAN;
+
+// Radius for lyrics along the arc (just above disc top edge)
+const R_LYRICS = DISC_RADIUS + 16;
+
+function formatTime(sec: number): string {
+  if (!sec || isNaN(sec) || sec < 0) return '0:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
 
 export default function NowPlayingScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const scrollViewRef = useRef<ScrollView>(null);
 
   const {
     currentTrack,
@@ -62,223 +93,492 @@ export default function NowPlayingScreen() {
     repeat,
     cycleRepeat,
     upcoming,
-    queueContext,
     jumpTo,
     removeFromQueue,
   } = usePlayer();
 
   const { isLiked, toggleLike } = useLibrary();
+  const { position, duration } = useProgress();
+
   const [showQueue, setShowQueue] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showSource, setShowSource] = useState(false);
   const [addingTrack, setAddingTrack] = useState<Track | null>(null);
 
+  // Background artwork crossfade management (Fix 5b)
+  const [currentArtwork, setCurrentArtwork] = useState<string>(
+    currentTrack ? upscaleThumbnail(currentTrack.albumImageUrl, 800) : ''
+  );
+  const [prevArtwork, setPrevArtwork] = useState<string>('');
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  // Synced lyrics for arc display
+  const [lyrics, setLyrics] = useState<Lyrics | null>(null);
+
+  useEffect(() => {
+    if (!currentTrack) return;
+    const newArt = upscaleThumbnail(currentTrack.albumImageUrl, 800);
+    if (newArt && newArt !== currentArtwork) {
+      setPrevArtwork(currentArtwork);
+      setCurrentArtwork(newArt);
+      fadeAnim.setValue(0);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+      }).start();
+    } else if (!currentArtwork && newArt) {
+      setCurrentArtwork(newArt);
+    }
+
+    // Prefetch upcoming track artwork if in queue
+    if (upcoming[0]?.albumImageUrl) {
+      const nextArt = upscaleThumbnail(upcoming[0].albumImageUrl, 800);
+      if (nextArt) Image.prefetch(nextArt);
+    }
+  }, [currentTrack?.id, currentTrack?.albumImageUrl]);
+
+  // Fetch lyrics for the arc
+  useEffect(() => {
+    if (!currentTrack) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await LyricsService.get(currentTrack);
+        if (!cancelled) setLyrics(res);
+      } catch {
+        // Fallback handled gracefully
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentTrack?.id]);
+
   if (!currentTrack) return null;
 
   const liked = isLiked(currentTrack.id);
   const busy = isLoading || isBuffering;
+  const trackDuration = duration || currentTrack.duration || 0;
+  const rawProgress = trackDuration > 0 ? Math.min(1, Math.max(0, position / trackDuration)) : 0;
 
-  const toggleLyricsView = () => {
-    setShowLyrics(!showLyrics);
-    if (!showLyrics) {
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+  // Calculate coordinates along progress arc
+  const currentProgressAngle = START_ANGLE + rawProgress * (END_ANGLE - START_ANGLE);
+  const knobX = CX + R_PROGRESS * Math.cos(currentProgressAngle);
+  const knobY = CY + R_PROGRESS * Math.sin(currentProgressAngle);
+
+  // SVG Arc helper function
+  const createArcD = (r: number, startA: number, endA: number) => {
+    const x1 = CX + r * Math.cos(startA);
+    const y1 = CY + r * Math.sin(startA);
+    const x2 = CX + r * Math.cos(endA);
+    const y2 = CY + r * Math.sin(endA);
+    return `M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`;
+  };
+
+  const bgTrackD = createArcD(R_PROGRESS, START_ANGLE, END_ANGLE);
+  const activeProgD = rawProgress > 0.005 ? createArcD(R_PROGRESS, START_ANGLE, currentProgressAngle) : '';
+  const outerDiscRingD = createArcD(DISC_RADIUS, START_ANGLE - 0.25, END_ANGLE + 0.25);
+  const innerDiscRingD = createArcD(DISC_RADIUS - 12, START_ANGLE - 0.22, END_ANGLE + 0.22);
+
+  // Drag and Tap seeker on the arc
+  const handleArcSeek = (touchX: number, touchY: number) => {
+    const dx = touchX - CX;
+    const dy = touchY - CY;
+    const angle = Math.atan2(dy, dx);
+    const ratio = (angle - START_ANGLE) / (END_ANGLE - START_ANGLE);
+    const clamped = Math.max(0, Math.min(1, ratio));
+    if (trackDuration > 0) {
+      seekTo(clamped * trackDuration);
     }
   };
 
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: (evt) => {
+      handleArcSeek(evt.nativeEvent.locationX, evt.nativeEvent.locationY);
+    },
+    onPanResponderMove: (evt) => {
+      handleArcSeek(evt.nativeEvent.locationX, evt.nativeEvent.locationY);
+    },
+    onPanResponderRelease: (evt) => {
+      handleArcSeek(evt.nativeEvent.locationX, evt.nativeEvent.locationY);
+    },
+  });
+
+  // Lyrics calculation along the curve of the arc
+  const activeLineIdx = LyricsService.activeLineIndex(lyrics, position);
+  const arcLyricItems = useMemo(() => {
+    if (lyrics && lyrics.lines && lyrics.lines.length > 0) {
+      const idx = activeLineIdx >= 0 ? activeLineIdx : 0;
+      const offsets = [
+        { offsetDeg: -44, opacity: 0.2, text: lyrics.lines[idx - 3]?.text },
+        { offsetDeg: -30, opacity: 0.35, text: lyrics.lines[idx - 2]?.text },
+        { offsetDeg: -16, opacity: 0.6, text: lyrics.lines[idx - 1]?.text },
+        { offsetDeg: 0, opacity: 1.0, text: lyrics.lines[idx]?.text },
+        { offsetDeg: 16, opacity: 0.6, text: lyrics.lines[idx + 1]?.text },
+        { offsetDeg: 30, opacity: 0.35, text: lyrics.lines[idx + 2]?.text },
+        { offsetDeg: 44, opacity: 0.2, text: lyrics.lines[idx + 3]?.text },
+      ];
+      return offsets.filter((item) => Boolean(item.text));
+    }
+    // Graceful fallback: song title & artist curved along the arc
+    return [
+      { offsetDeg: -22, opacity: 0.5, text: currentTrack.artist.name },
+      { offsetDeg: 0, opacity: 1.0, text: currentTrack.title },
+      { offsetDeg: 22, opacity: 0.5, text: currentTrack.album || 'Sonic Cube' },
+    ];
+  }, [lyrics, activeLineIdx, currentTrack]);
+
   return (
     <View style={styles.container}>
-      {/* Top Hero Photo (full-bleed top 42% of screen) */}
-      <View style={styles.heroBackgroundContainer}>
-        <Image
-          source={require('../../assets/ui/hero_now_playing.jpg')}
-          style={styles.heroBackgroundImage}
-          resizeMode="cover"
-        />
+      {/* 1. Full-bleed background photo taking top ~45% of screen with crossfade */}
+      <View style={[styles.photoContainer, { height: Y_APEX + 40 }]}>
+        {Boolean(prevArtwork) && (
+          <Image
+            source={{ uri: prevArtwork }}
+            style={StyleSheet.absoluteFill}
+            resizeMode="cover"
+          />
+        )}
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
+          {currentArtwork ? (
+            <Image
+              source={{ uri: currentArtwork }}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+            />
+          ) : (
+            <LinearGradient
+              colors={['#1c1c1c', '#0d0d0d']}
+              style={StyleSheet.absoluteFill}
+            />
+          )}
+        </Animated.View>
+
+        {/* Soft dark gradient at top for button readability */}
         <LinearGradient
-          colors={['transparent', 'rgba(13, 13, 13, 0.6)', '#0D0D0D']}
-          locations={[0.2, 0.7, 1]}
+          colors={['rgba(0,0,0,0.6)', 'transparent']}
+          style={styles.topGradient}
+        />
+
+        {/* Soft dark gradient fading into #000000 at bottom of photo */}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.6)', '#000000']}
+          locations={[0.3, 0.75, 1]}
           style={StyleSheet.absoluteFill}
         />
-      </View>
 
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={[
-          styles.contentContainer,
-          { paddingTop: insets.top + SIZES.xs, paddingBottom: insets.bottom + SIZES.lg },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Top Header: White Circles with Black Icons */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.whiteHeaderIconBtn}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <ChevronDown color="#000000" size={22} strokeWidth={2.5} />
-          </TouchableOpacity>
-
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.headerSub}>PLAYING FROM</Text>
-            <Text style={styles.headerTitle} numberOfLines={1}>
-              {queueContext || 'SONIC CUBE'}
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.whiteHeaderIconBtn}
-            onPress={() => setAddingTrack(currentTrack)}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <MoreHorizontal color="#000000" size={20} strokeWidth={2.5} />
-          </TouchableOpacity>
-        </View>
-
-        {/* CD-Style Turntable Centerpiece */}
-        <CdTurntable
-          albumImageUrl={currentTrack.albumImageUrl}
-          isPlaying={isPlaying}
-          isLiked={liked}
-          onToggleLike={() => toggleLike(currentTrack)}
-        />
-
-        {/* Track Title & Artist */}
-        <View style={styles.trackInfo}>
-          <Text style={styles.trackTitle} numberOfLines={1}>
+        {/* Item 10: Song title (white bold 18) & artist (#B4B6B5 13) caption at bottom-left over photo */}
+        <View style={styles.captionOverlay}>
+          <Text style={styles.captionTitle} numberOfLines={1} ellipsizeMode="tail">
             {currentTrack.title}
           </Text>
-          <Text style={styles.trackArtist} numberOfLines={1}>
+          <Text style={styles.captionArtist} numberOfLines={1}>
             {currentTrack.artist.name}
           </Text>
         </View>
+      </View>
 
-        {/* Linear Scrubber SeekBar */}
-        <View style={styles.seekContainer}>
-          <SeekBar onSeek={seekTo} />
-        </View>
+      {/* 2. Top buttons: white circles (#FCFCFC, 40pt) with black icons */}
+      <View style={[styles.topHeader, { top: insets.top + SIZES.xs }]}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.whiteTopButton}
+          activeOpacity={0.8}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <ChevronDown color="#000000" size={24} strokeWidth={2.5} />
+        </TouchableOpacity>
 
-        {/* Playback Controls Row */}
-        <View style={styles.controlsRow}>
-          {/* Shuffle */}
+        <TouchableOpacity
+          style={styles.whiteTopButton}
+          onPress={() => setAddingTrack(currentTrack)}
+          activeOpacity={0.8}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <MoreHorizontal color="#000000" size={20} strokeWidth={2.5} />
+        </TouchableOpacity>
+      </View>
+
+      {/* 3 & 4 & 5. Big Black Disc, Rings, Lyrics on the Arc, and Progress Arc */}
+      <View style={[styles.discContainer, { top: Y_APEX - 30 }]}>
+        <Svg width={SCREEN_WIDTH} height={DISC_RADIUS + 40} style={styles.svgOverlay}>
+          <Defs>
+            <SvgGradient id="fadeEdge" x1="0%" y1="0%" x2="0%" y2="100%">
+              <Stop offset="0%" stopColor="#000000" stopOpacity="0.95" />
+              <Stop offset="100%" stopColor="#000000" stopOpacity="1" />
+            </SvgGradient>
+          </Defs>
+
+          {/* Disc Background Shape */}
+          <Path
+            d={`M 0 ${DISC_RADIUS + 40} L 0 ${CY - DISC_RADIUS} ${createArcD(DISC_RADIUS, START_ANGLE - 0.25, END_ANGLE + 0.25)} L ${SCREEN_WIDTH} ${DISC_RADIUS + 40} Z`}
+            fill="#000000"
+          />
+
+          {/* 4. Lyrics following the curve of the arc */}
+          {arcLyricItems.map((item, i) => {
+            const angleRad = -Math.PI / 2 + (item.offsetDeg * Math.PI) / 180;
+            const px = CX + R_LYRICS * Math.cos(angleRad);
+            const py = CY + R_LYRICS * Math.sin(angleRad);
+            // Truncate to keep lyric readable along arc
+            const truncated =
+              item.text.length > 22 ? `${item.text.slice(0, 20)}..` : item.text;
+            return (
+              <SvgText
+                key={`lyric-${i}`}
+                x={px}
+                y={py}
+                fill="#FFFFFF"
+                fillOpacity={item.opacity}
+                fontSize={item.opacity === 1 ? 14 : 12}
+                fontWeight={item.opacity === 1 ? '700' : '500'}
+                textAnchor="middle"
+                transform={`rotate(${item.offsetDeg}, ${px}, ${py})`}
+              >
+                {truncated}
+              </SvgText>
+            );
+          })}
+
+          {/* Outer Ring of Disc: rgba(255,255,255,0.25) */}
+          <Path
+            d={outerDiscRingD}
+            stroke="rgba(255, 255, 255, 0.25)"
+            strokeWidth={1.5}
+            fill="none"
+          />
+
+          {/* Second Thinner Inner Ring: rgba(255,255,255,0.12) */}
+          <Path
+            d={innerDiscRingD}
+            stroke="rgba(255, 255, 255, 0.12)"
+            strokeWidth={1}
+            fill="none"
+          />
+
+          {/* 5. Progress Arc: faint track rgba(255,255,255,0.18) */}
+          <Path
+            d={bgTrackD}
+            stroke="rgba(255, 255, 255, 0.18)"
+            strokeWidth={3}
+            fill="none"
+            strokeLinecap="round"
+          />
+
+          {/* Active white progress arc (3pt, #FFFFFF) */}
+          {Boolean(activeProgD) && (
+            <Path
+              d={activeProgD}
+              stroke="#FFFFFF"
+              strokeWidth={3}
+              fill="none"
+              strokeLinecap="round"
+            />
+          )}
+
+          {/* White Knob at current position (14pt circle) */}
+          <Circle cx={knobX} cy={knobY} r={7} fill="#FFFFFF" />
+        </Svg>
+
+        {/* Invisible touch & drag responder over the progress arc */}
+        <View style={styles.arcPanZone} {...panResponder.panHandlers} />
+
+        {/* 6. Centre of the disc: Heart, Time text, Decorative curved bar */}
+        <View style={styles.discCenterContent}>
           <TouchableOpacity
-            onPress={toggleShuffle}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            onPress={() => toggleLike(currentTrack)}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Shuffle
-              color={shuffle ? '#FFFFFF' : '#777777'}
-              size={22}
-              strokeWidth={shuffle ? 2.5 : 2}
+            <Heart
+              color="#FFFFFF"
+              fill={liked ? '#FFFFFF' : 'transparent'}
+              size={28}
+              strokeWidth={2}
             />
           </TouchableOpacity>
 
-          {/* Previous Track */}
-          <TouchableOpacity
-            onPress={previous}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <SkipBack color="#FFFFFF" size={28} />
-          </TouchableOpacity>
+          {/* Time text: 0:46 / 3:18 in #B4B6B5 14pt */}
+          <Text style={styles.timeText}>
+            {formatTime(position)} / {formatTime(trackDuration)}
+          </Text>
 
-          {/* Large White Play/Pause Button inside Dark Ring */}
-          <View style={styles.playButtonRing}>
+          {/* Small white curved decorative bar (60 x 4, rounded) */}
+          <View style={styles.decorativeCurvedBar} />
+        </View>
+
+        {/* 7. Controls row */}
+        <View style={styles.controlsSection}>
+          {/* Sub-row: Shuffle and Repeat */}
+          <View style={styles.shuffleRepeatRow}>
             <TouchableOpacity
-              style={styles.whitePlayButton}
-              onPress={togglePlayPause}
-              activeOpacity={0.85}
+              onPress={toggleShuffle}
+              activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              {busy ? (
-                <ActivityIndicator color="#000000" size="small" />
-              ) : isPlaying ? (
-                <Pause color="#000000" size={30} fill="#000000" />
+              <Shuffle
+                color={shuffle ? '#FFFFFF' : '#6B6B6B'}
+                size={24}
+                strokeWidth={shuffle ? 2.5 : 2}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={cycleRepeat}
+              activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              {repeat === 'one' ? (
+                <Repeat1 color="#FFFFFF" size={24} strokeWidth={2.5} />
               ) : (
-                <Play color="#000000" size={30} fill="#000000" style={{ marginLeft: 3 }} />
+                <Repeat
+                  color={repeat === 'all' ? '#FFFFFF' : '#6B6B6B'}
+                  size={24}
+                  strokeWidth={repeat === 'all' ? 2.5 : 2}
+                />
               )}
             </TouchableOpacity>
           </View>
 
-          {/* Next Track */}
-          <TouchableOpacity
-            onPress={next}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <SkipForward color="#FFFFFF" size={28} />
-          </TouchableOpacity>
+          {/* Main Controls Row: Previous, Big White Play/Pause Circle, Next */}
+          <View style={styles.mainControlsRow}>
+            <TouchableOpacity
+              onPress={previous}
+              activeOpacity={0.75}
+              hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+            >
+              <SkipBack color="#FFFFFF" size={34} fill="#FFFFFF" />
+            </TouchableOpacity>
 
-          {/* Repeat */}
-          <TouchableOpacity
-            onPress={cycleRepeat}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            {repeat === 'one' ? (
-              <Repeat1 color="#FFFFFF" size={22} strokeWidth={2.5} />
-            ) : (
-              <Repeat
-                color={repeat === 'all' ? '#FFFFFF' : '#777777'}
-                size={22}
-                strokeWidth={repeat === 'all' ? 2.5 : 2}
-              />
-            )}
-          </TouchableOpacity>
+            {/* Big white play/pause circle (92pt) inside dark ring (120pt) */}
+            <View style={styles.darkPlayRing}>
+              <TouchableOpacity
+                style={styles.whitePlayCircle}
+                onPress={togglePlayPause}
+                activeOpacity={0.85}
+              >
+                {busy ? (
+                  <ActivityIndicator color="#000000" size="small" />
+                ) : isPlaying ? (
+                  <Pause color="#000000" size={38} fill="#000000" />
+                ) : (
+                  <Play color="#000000" size={38} fill="#000000" style={{ marginLeft: 4 }} />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              onPress={next}
+              activeOpacity={0.75}
+              hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+            >
+              <SkipForward color="#FFFFFF" size={34} fill="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Bottom Dark Pill Bar: #111110, radius 24 */}
-        <View style={styles.bottomPillBar}>
+        {/* 8. Bottom pill bar: height 56, radius 28, background #111110 */}
+        <View style={[styles.bottomPillBar, { marginBottom: Math.max(16, insets.bottom + 10) }]}>
           <TouchableOpacity
             onPress={() => setShowSource(true)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <MonitorSpeaker color="#FFFFFF" size={20} />
+            <MonitorSpeaker color="#FFFFFF" size={22} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={toggleLyricsView}
+            onPress={() => setShowLyrics(true)}
             activeOpacity={0.8}
-            style={styles.lyricsTouchCenter}
+            style={styles.lyricsPillCenter}
           >
             <Text style={styles.lyricsPillText}>Lyrics</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => setShowQueue(!showQueue)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            onPress={() => setShowQueue(true)}
+            activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <ListMusic color="#FFFFFF" size={20} />
+            <ListMusic color="#FFFFFF" size={22} />
           </TouchableOpacity>
         </View>
+      </View>
 
-        {/* Synchronized Scrolling Lyrics Card */}
-        {showLyrics && (
-          <View style={styles.lyricsCardContainer}>
-            <LyricsCard
-              track={currentTrack}
-              onSeek={seekTo}
-            />
+      {/* Error banner if stream failure occurs */}
+      {error && (
+        <TouchableOpacity style={styles.errorBanner} onPress={retry}>
+          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorHint}>Tap to retry</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Full Lyrics Sheet Modal */}
+      <Modal
+        visible={showLyrics}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowLyrics(false)}
+      >
+        <View style={styles.lyricsModalContainer}>
+          <View style={styles.lyricsModalHeader}>
+            <Text style={styles.lyricsModalTitle}>Lyrics</Text>
+            <TouchableOpacity
+              style={styles.closeModalBtn}
+              onPress={() => setShowLyrics(false)}
+            >
+              <X color="#FFFFFF" size={22} />
+            </TouchableOpacity>
           </View>
-        )}
+          <View style={styles.lyricsCardWrap}>
+            <LyricsCard track={currentTrack} onSeek={seekTo} />
+          </View>
+        </View>
+      </Modal>
 
-        {/* Up Next Queue */}
-        {showQueue && (
-          <View style={styles.queueContainer}>
-            <View style={styles.queueHeader}>
-              <Text style={styles.queueTitle}>Up Next ({upcoming.length})</Text>
-              <TouchableOpacity onPress={() => setShowQueue(false)}>
-                <X color="#8A99AD" size={18} />
-              </TouchableOpacity>
-            </View>
+      {/* Queue Sheet Modal */}
+      <Modal
+        visible={showQueue}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowQueue(false)}
+      >
+        <View style={styles.queueModalContainer}>
+          <View style={styles.queueModalHeader}>
+            <Text style={styles.queueModalTitle}>Up Next ({upcoming.length})</Text>
+            <TouchableOpacity
+              style={styles.closeModalBtn}
+              onPress={() => setShowQueue(false)}
+            >
+              <X color="#FFFFFF" size={22} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            style={styles.queueList}
+            contentContainerStyle={{ paddingBottom: 30 }}
+          >
             {upcoming.length > 0 ? (
-              upcoming.slice(0, 10).map((t, idx) => (
+              upcoming.slice(0, 15).map((t, idx) => (
                 <TouchableOpacity
                   key={`${t.id}-${idx}`}
-                  style={styles.queueItem}
-                  onPress={() => jumpTo(t.id)}
+                  style={styles.queueRow}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    jumpTo(t.id);
+                    setShowQueue(false);
+                  }}
                 >
                   <Image source={{ uri: t.albumImageUrl }} style={styles.queueThumb} />
-                  <View style={styles.queueInfo}>
-                    <Text style={styles.queueTrackTitle} numberOfLines={1}>{t.title}</Text>
-                    <Text style={styles.queueTrackArtist} numberOfLines={1}>{t.artist.name}</Text>
+                  <View style={styles.queueRowInfo}>
+                    <Text style={styles.queueRowTitle} numberOfLines={1}>
+                      {t.title}
+                    </Text>
+                    <Text style={styles.queueRowArtist} numberOfLines={1}>
+                      {t.artist.name}
+                    </Text>
                   </View>
                   <TouchableOpacity
                     onPress={() => removeFromQueue(t.id)}
@@ -289,19 +589,11 @@ export default function NowPlayingScreen() {
                 </TouchableOpacity>
               ))
             ) : (
-              <Text style={styles.queueEmpty}>Queue is empty</Text>
+              <Text style={styles.queueEmptyText}>Queue is empty</Text>
             )}
-          </View>
-        )}
-
-        {/* Error notification if any */}
-        {error && (
-          <TouchableOpacity style={styles.errorBanner} onPress={retry}>
-            <Text style={styles.errorText}>{error}</Text>
-            <Text style={styles.errorHint}>Tap to retry</Text>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
+          </ScrollView>
+        </View>
+      </Modal>
 
       <AddToPlaylistSheet track={addingTrack} onClose={() => setAddingTrack(null)} />
       <PlaybackSourceSheet visible={showSource} onClose={() => setShowSource(false)} />
@@ -312,103 +604,143 @@ export default function NowPlayingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#000000',
   },
-  heroBackgroundContainer: {
+  photoContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: Dimensions.get('window').height * 0.45,
     overflow: 'hidden',
   },
-  heroBackgroundImage: {
-    width: '100%',
-    height: '100%',
+  topGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 100,
   },
-  contentContainer: {
-    paddingHorizontal: 20,
-  },
-  header: {
+  topHeader: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SIZES.xs,
+    zIndex: 10,
   },
-  whiteHeaderIconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: COLORS.activeWhite,
+  whiteTopButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FCFCFC',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 6,
   },
-  headerTextContainer: {
-    alignItems: 'center',
+  captionOverlay: {
+    position: 'absolute',
+    left: 20,
+    bottom: 38,
+    right: 20,
+    zIndex: 6,
   },
-  headerSub: {
-    fontFamily: FONTS.medium,
-    fontSize: 10,
-    letterSpacing: 1.5,
-    color: COLORS.text.secondary,
-  },
-  headerTitle: {
+  captionTitle: {
     fontFamily: FONTS.bold,
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.85)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  captionArtist: {
+    fontFamily: FONTS.medium,
+    fontSize: 13,
+    color: '#B4B6B5',
     marginTop: 2,
+    textShadowColor: 'rgba(0, 0, 0, 0.85)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
-  trackInfo: {
+  discContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#000000',
+  },
+  svgOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  arcPanZone: {
+    position: 'absolute',
+    top: 10,
+    left: 20,
+    right: 20,
+    height: 70,
+    zIndex: 8,
+  },
+  discCenterContent: {
     alignItems: 'center',
-    marginTop: 4,
-    marginBottom: SIZES.xs,
-    paddingHorizontal: SIZES.md,
+    marginTop: 48,
+    zIndex: 5,
   },
-  trackTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    textAlign: 'center',
+  timeText: {
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+    color: '#B4B6B5',
+    marginTop: 6,
   },
-  trackArtist: {
-    fontFamily: FONTS.regular,
-    fontSize: 15,
-    color: COLORS.text.secondary,
-    marginTop: 4,
-    textAlign: 'center',
+  decorativeCurvedBar: {
+    width: 60,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#FFFFFF',
+    marginTop: 8,
   },
-  seekContainer: {
-    marginVertical: 4,
+  controlsSection: {
+    marginTop: 12,
+    paddingHorizontal: 28,
   },
-  controlsRow: {
+  shuffleRepeatRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: SIZES.sm,
-    marginVertical: SIZES.sm,
+    paddingHorizontal: 16,
+    marginBottom: 4,
   },
-  playButtonRing: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: COLORS.tabBar,
+  mainControlsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  darkPlayRing: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#0A0A0A',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderColor: 'rgba(255, 255, 255, 0.35)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  whitePlayButton: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
-    backgroundColor: COLORS.activeWhite,
+  whitePlayCircle: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: '#FCFCFC',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.5,
     shadowRadius: 10,
     elevation: 8,
   },
@@ -416,89 +748,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.tabBar,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#111110',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: 20,
-    marginTop: SIZES.xs,
-    marginBottom: SIZES.md,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    paddingHorizontal: 24,
+    marginHorizontal: 16,
+    marginTop: 16,
   },
-  lyricsTouchCenter: {
+  lyricsPillCenter: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   lyricsPillText: {
     fontFamily: FONTS.bold,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
-  },
-  lyricsCardContainer: {
-    marginTop: SIZES.sm,
-    marginBottom: SIZES.lg,
-  },
-  queueContainer: {
-    marginTop: SIZES.md,
-    padding: SIZES.md,
-    borderRadius: 16,
-    backgroundColor: COLORS.surface,
-  },
-  queueHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SIZES.sm,
-  },
-  queueTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  queueItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  queueThumb: {
-    width: 36,
-    height: 36,
-    borderRadius: 6,
-    marginRight: 10,
-  },
-  queueInfo: {
-    flex: 1,
-  },
-  queueTrackTitle: {
-    fontFamily: FONTS.medium,
-    fontSize: 13,
-    color: '#FFFFFF',
-  },
-  queueTrackArtist: {
-    fontFamily: FONTS.regular,
-    fontSize: 11,
-    color: '#8A99AD',
-  },
-  queueEmpty: {
-    fontFamily: FONTS.regular,
-    fontSize: 13,
-    color: '#8A99AD',
-    textAlign: 'center',
-    paddingVertical: SIZES.md,
   },
   errorBanner: {
-    backgroundColor: 'rgba(255, 51, 102, 0.15)',
+    position: 'absolute',
+    top: 90,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(255, 51, 102, 0.2)',
     borderWidth: 1,
     borderColor: '#FF3366',
     borderRadius: 12,
     padding: 12,
-    marginTop: SIZES.md,
     alignItems: 'center',
+    zIndex: 20,
   },
   errorText: {
     fontFamily: FONTS.medium,
@@ -508,7 +789,95 @@ const styles = StyleSheet.create({
   errorHint: {
     fontFamily: FONTS.regular,
     fontSize: 11,
+    color: '#B4B6B5',
+    marginTop: 2,
+  },
+  lyricsModalContainer: {
+    flex: 1,
+    backgroundColor: '#0D0D0D',
+    marginTop: 80,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 20,
+  },
+  lyricsModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  lyricsModalTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  closeModalBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#1B1B1B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lyricsCardWrap: {
+    flex: 1,
+  },
+  queueModalContainer: {
+    flex: 1,
+    backgroundColor: '#0D0D0D',
+    marginTop: 100,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 20,
+  },
+  queueModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  queueModalTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  queueList: {
+    flex: 1,
+  },
+  queueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  queueThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  queueRowInfo: {
+    flex: 1,
+  },
+  queueRowTitle: {
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+  queueRowArtist: {
+    fontFamily: FONTS.regular,
+    fontSize: 12,
     color: '#8A99AD',
     marginTop: 2,
+  },
+  queueEmptyText: {
+    fontFamily: FONTS.regular,
+    fontSize: 14,
+    color: '#8A99AD',
+    textAlign: 'center',
+    marginTop: 40,
   },
 });

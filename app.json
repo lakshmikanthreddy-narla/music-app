@@ -48,10 +48,21 @@
         }
       ],
       "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Sonic Cube to access your photo library to set your profile picture.",
+          "cameraPermission": "Allow Sonic Cube to use your camera to take a profile picture."
+        }
+      ],
       "./plugins/withCoreLibraryDesugaring",
       "./plugins/withAndroidAbis",
       "./plugins/withReleaseSigning"
     ],
+    "androidNavigationBar": {
+      "backgroundColor": "#0D0D0D",
+      "barStyle": "light-content"
+    },
     "backgroundColor": "#060B18"
   }
 }

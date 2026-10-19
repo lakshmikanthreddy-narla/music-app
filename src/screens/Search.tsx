@@ -33,20 +33,20 @@ const { width } = Dimensions.get('window');
 
 const FILTERS: SearchFilter[] = ['All', 'Songs', 'Artists', 'Albums', 'Playlists'];
 
-// 12 Browse genre tiles matching reference screen 3
+// 12 Browse genre tiles matching reference screen 3 with specific color tints
 const GENRE_TILES = [
-  { id: 'g_pop', name: 'Pop', query: 'pop hits', image: require('../../assets/ui/genre_pop.jpg') },
-  { id: 'g_rock', name: 'Rock', query: 'rock classics', image: require('../../assets/ui/genre_rock.jpg') },
-  { id: 'g_happy', name: 'Happy', query: 'happy feel good songs', image: require('../../assets/ui/genre_happy.jpg') },
-  { id: 'g_sad', name: 'Sad', query: 'sad acoustic songs', image: require('../../assets/ui/genre_sad.jpg') },
-  { id: 'g_chill', name: 'Chill', query: 'chill vibes lofi', image: require('../../assets/ui/genre_chill.jpg') },
-  { id: 'g_party', name: 'Party', query: 'party dance club', image: require('../../assets/ui/genre_party.jpg') },
-  { id: 'g_workout', name: 'Workout', query: 'workout gym cardio', image: require('../../assets/ui/genre_workout.jpg') },
-  { id: 'g_jazz', name: 'Jazz', query: 'smooth jazz cafe', image: require('../../assets/ui/genre_jazz.jpg') },
-  { id: 'g_hiphop', name: 'Hip Hop', query: 'hip hop rap hits', image: require('../../assets/ui/genre_hiphop.jpg') },
-  { id: 'g_indie', name: 'Indie', query: 'indie alternative', image: require('../../assets/ui/genre_indie.jpg') },
-  { id: 'g_classical', name: 'Classical', query: 'classical piano masterpiece', image: require('../../assets/ui/genre_classical.jpg') },
-  { id: 'g_trending', name: 'Trending', query: 'top trending hits', image: require('../../assets/ui/genre_trending.jpg') },
+  { id: 'g_pop', name: 'Pop', query: 'pop hits', image: require('../../assets/ui/genre_pop.jpg'), tint: 'rgba(88, 92, 102, 0.72)' },
+  { id: 'g_rock', name: 'Rock', query: 'rock classics', image: require('../../assets/ui/genre_rock.jpg'), tint: 'rgba(180, 32, 42, 0.72)' },
+  { id: 'g_happy', name: 'Happy', query: 'happy feel good songs', image: require('../../assets/ui/genre_happy.jpg'), tint: 'rgba(215, 105, 32, 0.72)' },
+  { id: 'g_sad', name: 'Sad', query: 'sad acoustic songs', image: require('../../assets/ui/genre_sad.jpg'), tint: 'rgba(82, 86, 96, 0.72)' },
+  { id: 'g_chill', name: 'Chill', query: 'chill vibes lofi', image: require('../../assets/ui/genre_chill.jpg'), tint: 'rgba(165, 35, 120, 0.72)' },
+  { id: 'g_party', name: 'Party', query: 'party dance club', image: require('../../assets/ui/genre_party.jpg'), tint: 'rgba(90, 112, 42, 0.72)' },
+  { id: 'g_workout', name: 'Workout', query: 'workout gym cardio', image: require('../../assets/ui/genre_workout.jpg'), tint: 'rgba(132, 75, 42, 0.72)' },
+  { id: 'g_jazz', name: 'Jazz', query: 'smooth jazz cafe', image: require('../../assets/ui/genre_jazz.jpg'), tint: 'rgba(112, 42, 118, 0.72)' },
+  { id: 'g_hiphop', name: 'Hip Hop', query: 'hip hop rap hits', image: require('../../assets/ui/genre_hiphop.jpg'), tint: 'rgba(215, 92, 24, 0.72)' },
+  { id: 'g_indie', name: 'Indie', query: 'indie alternative', image: require('../../assets/ui/genre_indie.jpg'), tint: 'rgba(198, 78, 28, 0.72)' },
+  { id: 'g_classical', name: 'Classical', query: 'classical piano masterpiece', image: require('../../assets/ui/genre_classical.jpg'), tint: 'rgba(128, 78, 134, 0.72)' },
+  { id: 'g_trending', name: 'Trending', query: 'top trending hits', image: require('../../assets/ui/genre_trending.jpg'), tint: 'rgba(68, 86, 114, 0.72)' },
 ];
 
 export default function SearchScreen() {
@@ -210,7 +210,7 @@ export default function SearchScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + SIZES.md, paddingBottom: SIZES.bottomInset },
+          { paddingTop: insets.top + SIZES.md, paddingBottom: SIZES.bottomInset + insets.bottom },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -277,8 +277,18 @@ export default function SearchScreen() {
                 >
                   <View style={styles.categoryCard}>
                     <Image source={category.image} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                    {/* One colour tint per genre tile from reference sheet */}
                     <LinearGradient
-                      colors={['rgba(0, 0, 0, 0.2)', 'rgba(0, 0, 0, 0.55)']}
+                      colors={[category.tint, 'rgba(0, 0, 0, 0.35)']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    {/* Light dark gradient only where text sits so face stays clear */}
+                    <LinearGradient
+                      colors={['rgba(0, 0, 0, 0.65)', 'rgba(0, 0, 0, 0.15)', 'transparent']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 0.75, y: 0 }}
                       style={StyleSheet.absoluteFill}
                     />
                     <Text style={styles.categoryName}>{category.name}</Text>

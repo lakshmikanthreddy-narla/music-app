@@ -136,7 +136,11 @@ export default function HomeScreen() {
             onPress={() => navigation.navigate('ProfileTab' as never)}
           >
             <Image
-              source={require('../../assets/ui/home_avatar.jpg')}
+              source={
+                profile.avatarUri
+                  ? { uri: profile.avatarUri }
+                  : require('../../assets/ui/home_avatar.jpg')
+              }
               style={styles.avatarInner}
               resizeMode="cover"
             />
@@ -178,7 +182,7 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: SIZES.bottomInset }
+          { paddingBottom: SIZES.bottomInset + insets.bottom }
         ]}
         showsVerticalScrollIndicator={false}
       >
