@@ -34,9 +34,6 @@ type EngineEvents = {
   onComplete: () => void;
   /** Playback failed for the loaded track. */
   onError: (error: unknown) => void;
-  /** Notification / lock-screen / bluetooth remote skip actions. */
-  onRemoteNext: () => void;
-  onRemotePrevious: () => void;
 };
 
 /**
@@ -117,15 +114,6 @@ export class PlaybackEngine {
   }
 
   private handleStatus(s: any): void {
-    if (s?.remoteCommand === 'next') {
-      this.listeners.onRemoteNext?.();
-      return;
-    }
-    if (s?.remoteCommand === 'previous') {
-      this.listeners.onRemotePrevious?.();
-      return;
-    }
-
     const duration = Number.isFinite(s?.duration) && s.duration > 0 ? s.duration : 0;
     const position = Number.isFinite(s?.currentTime) ? Math.max(0, s.currentTime) : 0;
 
@@ -299,8 +287,8 @@ export class PlaybackEngine {
    * Native lock-screen / notification controls.
    *
    * expo-audio owns the single MediaSession; NØTE must not create a second
-   * one. Play/pause, the scrub bar and next/previous track navigation act directly
-   * on this session, so the engine stays the one source of truth.
+   * one. Play/pause, the scrub bar and seek +/-10s act directly on this same
+   * player, so the engine stays the one source of truth.
    *
    * Attaching and updating are deliberately different calls:
    *
@@ -313,6 +301,10 @@ export class PlaybackEngine {
    * titles, but it rebuilt the session at the instant each track started --
    * when position and duration are still 0 -- leaving the notification stuck
    * at 00:00 with a dead progress bar.
+   *
+   * Next/previous are absent because expo-audio’s AudioMediaSessionCallback
+   * removes COMMAND_SEEK_TO_NEXT / COMMAND_SEEK_TO_PREVIOUS from the session
+   * and exposes no JS event for them.
    */
   private setLockScreenMetadata(track: Track): void {
     if (Platform.OS === 'web') return;
@@ -330,8 +322,8 @@ export class PlaybackEngine {
       }
 
       this.player?.setActiveForLockScreen(true, metadata, {
-        showSeekForward: false,
-        showSeekBackward: false,
+        showSeekForward: true,
+        showSeekBackward: true,
       });
       this.lockScreenActive = true;
     } catch {
