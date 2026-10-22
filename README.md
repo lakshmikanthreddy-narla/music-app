@@ -60,7 +60,7 @@ lyrics for the audio you asked for.
 
 ## Download
 
-**[⬇ Download SONIQ for Android (APK)](https://github.com/lakshmikanthreddy-narla/music-app/releases/latest)**
+**[⬇ Download SONIQ for Android (APK)](https://github.com/lakshmikanthreddy-narla/music-app/releases/download/v1.0.0/SONIQ-v1.0.0.apk)**
 
 <!-- Optional: add the checksum of your APK so people can verify the file.
 SHA-256  PASTE-YOUR-SHA256-HERE
