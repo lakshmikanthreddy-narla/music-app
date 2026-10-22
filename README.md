@@ -1,6 +1,6 @@
 <div align="center">
 
-# NØTE
+# SONIQ
 
 **A music player for Android. Search, queue, and play — with the screen off.**
 
@@ -8,7 +8,8 @@ No account. No ads. No backend. No tracking.
 
 [![License: GPL v3 or later](https://img.shields.io/badge/License-GPLv3%2B-blue.svg)](LICENSE)
 [![Platform: Android](https://img.shields.io/badge/Platform-Android-3DDC84.svg)](#download)
-[![Release](https://img.shields.io/github/v/release/SJbuilds04/NOTE?include_prereleases)](https://github.com/SJbuilds04/NOTE/releases/latest)
+[![Built with: React Native](https://img.shields.io/badge/Built%20with-React%20Native%20%2B%20Expo-000020.svg)](#tech-stack)
+[![Release](https://img.shields.io/github/v/release/lakshmikanthreddy-narla/music-app?include_prereleases)](https://github.com/lakshmikanthreddy-narla/music-app/releases/latest)
 
 </div>
 
@@ -16,17 +17,9 @@ No account. No ads. No backend. No tracking.
 
 <div align="center">
 
-<a href="https://github.com/SJbuilds04/NOTE/releases/latest">
-  <img src="docs/preview.jpg" alt="NØTE — search, queue, and play with the screen off" width="820">
+<a href="https://github.com/lakshmikanthreddy-narla/music-app/releases/latest">
+  <img src="docs/preview.jpg" alt="SONIQ — search, queue, and play with the screen off" width="820">
 </a>
-
-<!-- To replace this still with the inline showcase video:
-     1. Open any GitHub issue or comment box on this repo
-     2. Drag brag.mp4 into it -- GitHub uploads it and gives you a URL like
-        https://github.com/user-attachments/assets/<uuid>
-     3. Delete the <a>...</a> block above and paste that bare URL on its own
-        line here. GitHub renders it as an inline video player.
-     Do NOT commit the mp4 itself -- it bundles a third-party music track. -->
 
 </div>
 
@@ -34,56 +27,70 @@ No account. No ads. No backend. No tracking.
 
 ## What it is
 
-NØTE is a free, open-source music player. You search for a song, tap it, and it plays —
+SONIQ is a free, open-source music player. You search for a song, tap it, and it plays —
 including in the background, with the screen locked, using your phone's normal lock-screen
 media controls.
 
-Everything you build up — liked songs, playlists, history, queue — is stored **on your
-device only**. There is no NØTE account, no NØTE server, and nothing is sent anywhere
-except the requests needed to search for and stream the audio you asked for.
+Everything you build up — liked songs, playlists, history, queue, profile and listening
+stats — is stored **on your device only**. There is no SONIQ account, no SONIQ server, and
+nothing is sent anywhere except the requests needed to search for, stream, and look up
+lyrics for the audio you asked for.
 
 ## Features
 
 - **Search** — songs, artists, albums and playlists, with artwork and durations
 - **Background playback** — keeps playing with the screen off, via a foreground service
-- **Lock-screen controls** — play/pause, skip, and ±10s seeking from the notification
-- **Queue** — add, remove, reorder, play-next, shuffle, and repeat (off / all / one)
+- **Lock-screen and notification controls** — control playback without opening the app
+- **Now Playing** — full-bleed artwork that changes with every song, a curved disc layout,
+  a progress arc, and a like button
+- **Synced lyrics** — time-synced lyrics shown while the song plays (looked up from LRCLIB)
+- **Queue** — add, remove, reorder, shuffle, and repeat (off / all / one)
+- **Add to Queue** — add one song from its menu, or long-press to select several songs and
+  add them all at once; queued songs play in the order you added them
 - **Library** — liked songs, your own playlists, and imported public playlists
 - **History** — what you played, when
 - **Resumes where you left off** — queue and playback position survive a restart
-- **A real seek bar** — drag to scrub, not a decoration
+- **Next-track preloading** — the following song is prepared in advance for quick starts
+- **Profile** — your name, gender, and a profile photo taken with the camera or chosen from
+  the gallery
+- **Real listening stats** — songs played, time listened today, and artists explored, all
+  counted from your own listening and starting at zero
+- **Dark, black-and-white design** — a monochrome interface where the artwork supplies the
+  colour
 
 ## Download
 
-Grab the signed APK from the **[latest release](https://github.com/SJbuilds04/NOTE/releases/latest)**:
+**[⬇ Download SONIQ for Android (APK)](https://github.com/lakshmikanthreddy-narla/music-app/releases/latest)**
 
-**[⬇ Download NOTE-v1.0.0.apk](https://github.com/SJbuilds04/NOTE/releases/latest/download/NOTE-v1.0.0.apk)**
+<!-- Optional: add the checksum of your APK so people can verify the file.
+SHA-256  PASTE-YOUR-SHA256-HERE
+-->
 
-Verify it before installing:
+Install steps:
 
-```
-SHA-256  ca911b5a49ead0f3129a1748a575fb8c5b746ccd6ed035c42441283ac536ee52
-```
+1. Open the link above on your Android phone and download the APK.
+2. Open the downloaded file. Android will ask you to allow installs from this source
+   (your browser or file manager) — allow it for this one install.
+3. Tap **Install**, then open **SONIQ**.
 
-```bash
-# Linux / macOS
-sha256sum NOTE-v1.0.0.apk
-
-# Windows (PowerShell)
-Get-FileHash NOTE-v1.0.0.apk -Algorithm SHA256
-```
-
-NØTE is **not distributed through Google Play**, so you install it by sideloading. Android
+SONIQ is **not distributed through Google Play**, so you install it by sideloading. Android
 will warn you about installing from an unknown source — that warning is expected for any
-APK obtained outside the Play Store. Only install a build whose checksum matches the one
-published above, or one you compiled yourself from this repository.
+APK obtained outside the Play Store. Only install a build you downloaded from this
+repository or compiled yourself.
 
-Requires Android 7.0 or newer. The release APK is signed with the project's own key; it is
-not affiliated with, reviewed by, or distributed by Google.
+Requires Android 7.0 (API 24) or newer.
+
+### Build the APK yourself on GitHub
+
+1. Open the **Actions** tab of this repository.
+2. Choose **Build Android APK** and click **Run workflow** (it also runs on every push to
+   `main`).
+3. When it finishes (about 15–25 minutes), download the **SONIQ-apk** artifact and unzip it.
+
+Without your own signing key, the workflow signs the APK with the debug key, which installs
+fine for personal use but should not be used for public distribution.
 
 ## Build from source
-
-You do not have to trust the published APK — you can build your own.
 
 **Prerequisites**
 
@@ -94,8 +101,8 @@ You do not have to trust the published APK — you can build your own.
 **Steps**
 
 ```bash
-git clone https://github.com/SJbuilds04/NOTE.git
-cd NOTE
+git clone https://github.com/lakshmikanthreddy-narla/music-app.git
+cd music-app
 npm install
 
 # Generate the native Android project (android/ is not committed)
@@ -105,12 +112,43 @@ npx expo prebuild --platform android
 npm run android
 ```
 
-To produce a release build, supply your own signing key and run the Gradle release task.
-The keystore used for the published APK is **not** in this repository and never will be.
+SONIQ contains a custom native Android module, so it does **not** run in Expo Go — use the
+commands above (or the GitHub Actions build).
+
+To produce a release build with your own signing key, put your credentials in
+`credentials/keystore.json` (this file is gitignored and must never be committed) and run
+the Gradle release task, or use the **Build Android APK** workflow.
 
 > **Note:** `android/` is generated by `expo prebuild` and is intentionally gitignored, so a
 > clean checkout will not contain it. Re-run prebuild after pulling changes that touch native
 > configuration.
+
+## Tech stack
+
+| Language | Where it is used |
+|---|---|
+| **TypeScript / TSX** | The whole app: screens, navigation, hooks, services, playback engine, queue, providers (about 13,000 lines) |
+| **Kotlin** | `modules/` — the Android native module that resolves audio streams (about 450 lines) |
+| **JavaScript** | Expo config plugins in `plugins/` (ABI list, release signing, core-library desugaring) |
+| **Swift** | `modules/` (iOS folder) — a minimal iOS module stub |
+| **Gradle** | Android build configuration for the native module |
+| **YAML** | GitHub Actions workflow that builds the APK |
+| **JSON** | `package.json`, `app.json`, `tsconfig.json`, module configuration |
+
+| Library | Used for |
+|---|---|
+| React Native `0.86` + React `19` | UI framework |
+| Expo SDK `57` (with `expo-dev-client`) | Build tooling and native APIs |
+| `expo-audio` | Audio playback, background playback, lock-screen session |
+| React Navigation (bottom tabs, native stack) | Navigation |
+| `react-native-reanimated` + `react-native-worklets` | Animations |
+| `react-native-svg` | Curved Now Playing disc, progress arc and lyric layout |
+| `expo-linear-gradient`, `expo-blur` | Gradients and blur |
+| `expo-image-picker`, `expo-file-system` | Profile photo from camera or gallery |
+| `@react-native-async-storage/async-storage` | On-device storage for library, queue, history and stats |
+| `lucide-react-native` | Icons |
+| [NewPipe Extractor](https://github.com/TeamNewPipe/NewPipeExtractor) `v0.26.5` | Resolving a playable audio stream (Android, Kotlin) |
+| [LRCLIB](https://lrclib.net) | Time-synced lyrics lookup |
 
 ## How it works
 
@@ -126,25 +164,51 @@ streamResolver = DirectStreamSource → NativeStreamSource → EndpointStreamSou
 ```
 
 `NativeStreamSource` is an Android-only Kotlin module that resolves a progressive audio
-stream. `EndpointStreamSource` lets you point the app at a compatible service you run or are
-authorised to use. Adding another source means writing one class that implements three
-methods — nothing else in the app changes.
+stream on the device. `EndpointStreamSource` lets you point the app at a compatible service
+you run or are authorised to use. Adding another source means writing one class that
+implements three methods — nothing else in the app changes.
+
+Search and metadata come from the provider layer, queue and shuffle live in
+`src/playback/queue.ts`, and the next track is resolved ahead of time by
+`src/playback/preload.ts`.
+
+### Project structure
+
+```
+App.tsx, index.ts          App entry
+src/
+  screens/                 Onboarding, Home, Search, Library, PlaylistDetail,
+                           NowPlaying, History, Profile (Settings), ProfileSetup
+  components/              Common UI, track lists, mini player, queue sheet, lyrics
+  navigation/              Root stack and bottom tabs
+  playback/                PlaybackEngine, queue, preloader
+  providers/               YouTube discovery and stream resolvers
+  services/                Music, library, lyrics, stats, toast
+  hooks/                   Player, library, search, stats
+  core/                    Types, storage, cache, HTTP, errors
+  constants/theme.ts       Colours and design tokens
+modules/                   Android (Kotlin) native module
+plugins/                   Expo config plugins
+assets/                    Icons, splash and UI images
+.github/workflows/         APK build workflow
+```
 
 ---
 
 # Legal
 
-Please read this section before using, building, or redistributing NØTE.
+Please read this section before using, building, or redistributing SONIQ.
 
 ## License
 
-**NØTE is licensed under the GNU General Public License, version 3 or (at your option) any
+**SONIQ is licensed under the GNU General Public License, version 3 or (at your option) any
 later version (GPL-3.0-or-later).** The full license text is in [`LICENSE`](LICENSE); the
 project copyright notice is in [`COPYRIGHT`](COPYRIGHT).
 
 ```
-NØTE — a music player for Android
+SONIQ — a music player for Android
 Copyright (C) 2026 Sanyam Jain
+Modifications Copyright (C) 2026 lakshmikanthreddy-narla
 
 This program is free software: you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software Foundation,
@@ -153,31 +217,28 @@ either version 3 of the License, or (at your option) any later version.
 
 ### Why GPL and not a permissive license
 
-NØTE links the **NewPipe Extractor**, which is GPL-3.0-or-later. GPL is a copyleft
-license, so any distributed work that combines with it must be released under the same
-terms. NØTE is therefore GPL-3.0-or-later. This is not optional and not a preference — it
-is the licensing consequence of the dependency.
-
-An earlier revision of this repository carried an MIT `LICENSE` inherited from the Expo
-project template. That text did not describe the combined work and has been replaced.
+SONIQ links the **NewPipe Extractor**, which is GPL-3.0-or-later, and it is built on
+GPL-licensed source code. GPL is a copyleft license, so any distributed work that combines
+with it must be released under the same terms. SONIQ is therefore GPL-3.0-or-later. This is
+the licensing consequence of those components, not a preference.
 
 ### What the license means for you
 
-You may **use, study, modify, and redistribute** NØTE, including commercially. In exchange,
-if you distribute NØTE or any derivative of it — modified or not, as source or as an APK —
+You may **use, study, modify, and redistribute** SONIQ, including commercially. In exchange,
+if you distribute SONIQ or any derivative of it — modified or not, as source or as an APK —
 you must:
 
 1. License the whole work under GPL-3.0-or-later,
 2. Provide or offer the **complete corresponding source code**, including your changes, and
 3. Preserve the copyright notices and this license information.
 
-You may **not** relicense NØTE or any derivative under a permissive or proprietary license,
+You may **not** relicense SONIQ or any derivative under a permissive or proprietary license,
 and you may not distribute a binary without making the matching source available.
 
 ### Source code availability
 
 This repository **is** the complete corresponding source for the released APK, as required
-by GPL-3.0-or-later §3 and §6. If you received a NØTE binary from anywhere else and cannot
+by GPL-3.0-or-later §3 and §6. If you received a SONIQ binary from anywhere else and cannot
 obtain its source, that redistribution is not compliant with the license.
 
 ## Warranty disclaimer
@@ -188,7 +249,7 @@ As stated in sections 15 and 16 of the GPL:
 > WARRANTY**; without even the implied warranty of **MERCHANTABILITY** or **FITNESS FOR A
 > PARTICULAR PURPOSE**. See the GNU General Public License for more details.
 
-You use NØTE entirely at your own risk. The author accepts no liability for any damages
+You use SONIQ entirely at your own risk. The authors accept no liability for any damages
 arising from its use.
 
 ## Third-party components
@@ -198,6 +259,7 @@ Full notices, versions, and license terms are in
 
 | Component | License | How it is used |
 |---|---|---|
+| Original source code by Sanyam Jain | GPL-3.0-or-later | The codebase SONIQ was modified from |
 | [NewPipe Extractor](https://github.com/TeamNewPipe/NewPipeExtractor) `v0.26.5` | GPL-3.0-or-later | Unmodified binary dependency via JitPack |
 | nanojson, jsoup | MIT | Transitive, via NewPipe Extractor |
 | Mozilla Rhino | MPL-2.0 | Transitive, via NewPipe Extractor |
@@ -208,37 +270,39 @@ The NewPipe **application** is not used or bundled — only the extractor librar
 
 ## No affiliation or endorsement
 
-- NØTE is **not affiliated with, authorised by, endorsed by, or sponsored by Google LLC,
+- SONIQ is **not affiliated with, authorised by, endorsed by, or sponsored by Google LLC,
   YouTube, or any of their subsidiaries.** "YouTube" and "Google" are trademarks of
   Google LLC. They are referred to here only to describe what the software does
   (nominative use); no claim is made to those marks.
-- NØTE is **not affiliated with Team NewPipe.** NewPipe Extractor is used as an
+- SONIQ is **not affiliated with Team NewPipe.** NewPipe Extractor is used as an
   independent, unmodified library under its own license, and its authors have no
   involvement in this project.
-- NØTE is an independent project by Sanyam Jain.
+- SONIQ is **not affiliated with LRCLIB.** It only sends lyric lookup requests to the
+  public LRCLIB service.
 
 ## No content is hosted or distributed
 
-**NØTE does not host, store, upload, cache for redistribution, or provide any music, audio,
-video, or other copyrighted content.** It contains no media library of its own.
+**SONIQ does not host, store, upload, cache for redistribution, or provide any music,
+audio, video, lyrics, or other copyrighted content.** It contains no media library of its
+own. The images bundled in `assets/` are used for the interface design only.
 
-NØTE is a client. It performs the same kind of requests a browser performs, on your device,
-at your direction, and plays the result back to you. All content remains with its original
-host and its rights holders. No content passes through any infrastructure operated by the
-author.
+SONIQ is a client. It performs the same kind of requests a browser performs, on your
+device, at your direction, and plays the result back to you. All content remains with its
+original host and its rights holders. No content passes through any infrastructure operated
+by the authors.
 
 ## Your responsibility as a user
 
 Accessing a third-party service through an unofficial client **may conflict with that
 service's terms of service**, and those terms are a matter between you and that service.
 
-By using NØTE you accept that:
+By using SONIQ you accept that:
 
 - You are solely responsible for how you use it, and for complying with the terms of
   service of any platform you access through it, as well as with the copyright law and any
   other laws that apply where you live.
-- The author does not encourage or condone copyright infringement.
-- NØTE is published as **free software for personal, educational, and interoperability
+- The authors do not encourage or condone copyright infringement.
+- SONIQ is published as **free software for personal, educational, and interoperability
   purposes**, and is provided as-is with no warranty of any kind.
 
 If you are unsure whether your intended use is lawful in your jurisdiction, seek your own
@@ -246,13 +310,14 @@ legal advice. Nothing in this document is legal advice.
 
 ## Privacy
 
-NØTE has no account system, no analytics, no telemetry, no crash reporting, and no server
-operated by the author.
+SONIQ has no account system, no analytics, no telemetry, no crash reporting, and no server
+operated by the authors.
 
-Liked songs, playlists, history, queue, playback position, and settings are written to your
-device's local storage and never leave it. Uninstalling the app removes them. The only
-network requests NØTE makes are those required to fulfil a search or play a track you
-selected.
+Liked songs, playlists, history, queue, playback position, listening stats, your profile
+(name, gender and photo), and settings are written to your device's local storage and never
+leave it. Uninstalling the app removes them. The only network requests SONIQ makes are those
+required to fulfil a search, play a track you selected, or fetch lyrics for the song that is
+playing (the song title and artist are sent to LRCLIB for that lookup).
 
 ## DMCA and contact
 
@@ -273,10 +338,15 @@ contain provider-specific playback logic.
 
 ## Credits
 
-Built by **[Sanyam Jain](https://github.com/SJbuilds04)** (SJBUILDS).
+Built and maintained by **[lakshmikanthreddy-narla](https://github.com/lakshmikanthreddy-narla)**.
+
+SONIQ was modified from an open-source Android music player originally written by
+**[Sanyam Jain](https://github.com/SJbuilds04)** and released under GPL-3.0-or-later.
+That license and the original copyright notice are preserved in this repository.
 
 Stream resolution is powered by the excellent
-[NewPipe Extractor](https://github.com/TeamNewPipe/NewPipeExtractor) by Team NewPipe.
+[NewPipe Extractor](https://github.com/TeamNewPipe/NewPipeExtractor) by Team NewPipe, and
+synced lyrics come from [LRCLIB](https://lrclib.net).
 
 <div align="center">
 
